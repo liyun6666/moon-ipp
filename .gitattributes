@@ -1,0 +1,4 @@
+* text=auto
+*.mbt text eol=lf
+*.mbti text eol=lf
+*.pdf binary
