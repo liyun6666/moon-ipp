@@ -1,5 +1,16 @@
-// import {
-//   "liyun6666/moon-ipp" @lib,
-// }
+import {
+  "liyun6666/moon-ipp" @ipp,
+  "liyun6666/moon-ipp/client",
+  "liyun6666/moon-ipp/cli",
+  "moonbitlang/async",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/stdio",
+  "moonbitlang/core/env",
+  "moonbitlang/core/json",
+  "moonbitlang/core/buffer",
+  "moonbitlang/core/encoding/utf8",
+}
+
+supported_targets = "native"
 
 pkgtype(kind: "executable")
