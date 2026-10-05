@@ -57,7 +57,7 @@ def spool_contains(document):
 
 log = (OUT / "server.log").open("w")
 server = subprocess.Popen([
-    "ippeveprinter", "-roff", "-n", "localhost", "-p", "8631", "-2", "-s", "60",
+    "ippeveprinter", "-n", "localhost", "-p", "8631", "-2", "-s", "60",
     "-f", "application/pdf,text/plain", "-d", str(SPOOL), "-k", "-v", "Moon IPP Test Printer",
 ], stdout=log, stderr=log)
 try:

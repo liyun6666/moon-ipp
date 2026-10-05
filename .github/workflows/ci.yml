@@ -29,7 +29,10 @@ jobs:
           moon fmt --check
           python3 scripts/count_source.py --minimum 4001
       - name: Install independent CUPS implementation
-        run: sudo apt-get update && sudo apt-get install -y cups-ipp-utils
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cups-ipp-utils avahi-daemon
+          sudo systemctl start avahi-daemon
       - name: Exercise native client against CUPS
         run: python3 scripts/interop_cups.py
       - name: Preserve interoperability evidence
