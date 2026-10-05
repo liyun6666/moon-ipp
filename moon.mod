@@ -19,8 +19,12 @@ repository = "https://github.com/liyun6666/moon-ipp"
 
 license = "Apache-2.0"
 
-keywords = ["ipp", "printing", "protocol", "cups", "client"]
+keywords = [ "ipp", "printing", "protocol", "cups", "client" ]
 
 preferred_target = "native"
 
 description = "MoonBit-native IPP codec, capability validation and network printing client"
+
+import {
+  "moonbitlang/async@0.22.4",
+}
