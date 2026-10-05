@@ -192,10 +192,21 @@ pub async fn Client::wait_job(
   policy.validate()
   let observations : Array[@ipp.JobObservation] = []
   let mut previous : @ipp.Job? = None
+  let started = @async.now()
   for index = 0; index < policy.maximum_polls; index = index + 1 {
     let job = self.job(job_id)
     @ipp.validate_job_observation(previous, job)
-    observations.push({ job, elapsed_ms: index * policy.interval_ms, })
+    let elapsed = @async.now() - started
+    observations.push({
+      job,
+      elapsed_ms: if elapsed < 0L {
+        0
+      } else if elapsed > 2147483647L {
+        2147483647
+      } else {
+        elapsed.to_int()
+      },
+    })
     match job.state {
       Some(state) if state.terminal() => return observations
       _ => ()

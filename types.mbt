@@ -1,5 +1,5 @@
 ///|
-pub suberror IppError {
+pub(all) suberror IppError {
   Invalid(String)
   Truncated(Int, Int)
   Limit(String)

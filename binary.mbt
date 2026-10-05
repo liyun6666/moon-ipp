@@ -62,12 +62,6 @@ fn Reader::length_bytes(self : Reader) -> Bytes raise IppError {
 }
 
 ///|
-fn Reader::peek(self : Reader) -> Int raise IppError {
-  self.require(1)
-  self.data[self.offset].to_int()
-}
-
-///|
 fn put_byte(output : @buffer.Buffer, value : Int) -> Unit raise IppError {
   if value < 0 || value > 255 {
     raise Invalid("byte out of range")
