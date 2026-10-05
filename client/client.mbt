@@ -123,7 +123,7 @@ pub async fn Client::print_job(
       let _ = self.validate_job(options)
     }
   }
-  @ipp.job_from_response(
+  accepted_job(
     self.exchange(self.context.print_job(self.request_id(), options, document)),
   )
 }
@@ -133,7 +133,7 @@ pub async fn Client::create_job(
   self : Client,
   options : @ipp.JobOptions,
 ) -> @ipp.Job {
-  @ipp.job_from_response(
+  accepted_job(
     self.exchange(self.context.create_job(self.request_id(), options)),
   )
 }
@@ -159,9 +159,26 @@ pub async fn Client::send_document(
 
 ///|
 pub async fn Client::job(self : Client, job_id : Int) -> @ipp.Job {
-  @ipp.job_from_response(
+  let job = @ipp.job_from_response(
     self.exchange(self.context.job_attributes(self.request_id(), job_id)),
   )
+  if job.id != job_id {
+    raise @ipp.Protocol("response job-id does not match requested job")
+  }
+  job
+}
+
+///| A successful status means the printer may already have accepted work.
+
+///|
+/// Missing/malformed job identity must not look like a safely retryable failure.
+fn accepted_job(response : @ipp.Message) -> @ipp.Job raise {
+  @ipp.job_from_response(response) catch {
+    _ =>
+      raise SubmissionUncertain(
+        "printer accepted the operation but returned no usable job identity; query jobs before submitting again",
+      )
+  }
 }
 
 ///|

@@ -5,6 +5,8 @@ priv struct StubTransport {
   slow : Bool
   fail_print : Bool
   reject_print : Bool
+  wrong_job_id : Bool
+  omit_job_id : Bool
 }
 
 ///|
@@ -44,12 +46,16 @@ impl Transport for StubTransport with fn exchange(
     )
   }
   if request.code == 2 || request.code == 9 || request.code == 5 {
-    groups.push(
-      @ipp.Group::job([
-        @ipp.Attribute::new("job-id", @ipp.Integer(27)),
-        @ipp.Attribute::new("job-state", @ipp.Enumeration(9)),
-      ]),
-    )
+    let attributes = [@ipp.Attribute::new("job-state", @ipp.Enumeration(9))]
+    if !self.omit_job_id {
+      attributes.push(
+        @ipp.Attribute::new(
+          "job-id",
+          @ipp.Integer(if self.wrong_job_id { 28 } else { 27 }),
+        ),
+      )
+    }
+    groups.push(@ipp.Group::job(attributes))
   }
   let id = request.request_id + (if self.wrong_id { 1 } else { 0 })
   let status = if self.reject_print && request.code == 2 { 0x040b } else { 0 }
@@ -64,6 +70,8 @@ fn stub() -> StubTransport {
     slow: false,
     fail_print: false,
     reject_print: false,
+    wrong_job_id: false,
+    omit_job_id: false,
   }
 }
 
@@ -174,5 +182,49 @@ async test "concurrent caller cannot interleave a transaction" {
     }
     let _ = first.wait()
   })
+  assert_eq(transport.requests.length(), 1)
+}
+
+///|
+async test "query rejects a different job even on the first poll" {
+  let transport = StubTransport::{ ..stub(), wrong_job_id: true, }
+  let client = Client::new("ipp://localhost/ipp/print", transport)
+  try client.wait_job(27) catch {
+    error => assert_true(error is @ipp.Protocol(_))
+  } noraise {
+    _ => fail("accepted completion of a different job")
+  }
+  assert_eq(transport.requests.length(), 1)
+}
+
+///|
+async test "accepted print without job identity requires reconciliation" {
+  let transport = StubTransport::{ ..stub(), omit_job_id: true, }
+  let client = Client::new("ipp://localhost/ipp/print", transport)
+  try
+    client.print_job(
+      @ipp.JobOptions::new("Report", "application/pdf"),
+      b"pdf",
+      preflight=false,
+    )
+  catch {
+    error => assert_true(error is SubmissionUncertain(_))
+  } noraise {
+    _ => fail("accepted print has no job identity")
+  }
+  assert_eq(transport.requests.length(), 1)
+}
+
+///|
+async test "accepted create without job identity cannot be safely repeated" {
+  let transport = StubTransport::{ ..stub(), omit_job_id: true, }
+  let client = Client::new("ipp://localhost/ipp/print", transport)
+  try
+    client.create_job(@ipp.JobOptions::new("Report", "application/pdf"))
+  catch {
+    error => assert_true(error is SubmissionUncertain(_))
+  } noraise {
+    _ => fail("accepted create has no job identity")
+  }
   assert_eq(transport.requests.length(), 1)
 }
