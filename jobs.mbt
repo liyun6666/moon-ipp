@@ -86,9 +86,13 @@ pub fn Job::from_group(group : Group) -> Job raise IppError {
   if group.tag != 2 {
     raise Protocol("expected job attribute group")
   }
-  let id = match group.get_int("job-id") {
-    Some(id) if id > 0 => id
-    _ => raise Protocol("job group has no positive job-id")
+  let id = match group.find("job-id") {
+    Some(attribute) =>
+      match attribute.values {
+        [Integer(id)] if id > 0 => id
+        _ => raise Protocol("job group requires one positive integer job-id")
+      }
+    None => raise Protocol("job group has no positive job-id")
   }
   let reasons = match group.find("job-state-reasons") {
     Some(attribute) => attribute.string_values()

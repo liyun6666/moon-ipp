@@ -107,7 +107,8 @@ fn RequestContext::job_request(
     raise Invalid("job-id must be positive")
   }
   let attributes = self.attributes()
-  attributes.push(Attribute::new("job-id", Integer(job_id)))
+  // RFC 8011 requires job-id immediately after the target printer-uri.
+  attributes.insert(3, Attribute::new("job-id", Integer(job_id)))
   self.request(operation, request_id, attributes)
 }
 

@@ -8,14 +8,15 @@ pub fn validate_request(request : Message) -> Unit raise IppError {
   }
   let operation = request.groups[0]
   validate_common(operation)
-  if operation.get_string("printer-uri") is None {
-    raise Invalid("missing printer-uri")
+  if operation.attributes.length() < 3 ||
+    operation.attributes[2].name != "printer-uri" {
+    raise Invalid("printer-uri must be the third operation attribute")
   }
-  match operation.get_string("printer-uri") {
-    Some(uri) => {
+  match required_single_value(operation, "printer-uri") {
+    Uri(uri) => {
       let _ = PrinterUri::parse(uri)
     }
-    None => ()
+    _ => raise Invalid("printer-uri requires one URI value")
   }
   if request.request_id < 1 {
     raise Invalid("nonpositive request-id")
@@ -39,8 +40,9 @@ pub fn validate_request(request : Message) -> Unit raise IppError {
     Some(SendDocument) => {
       require_job_id(operation)
       require_document_format(operation)
-      if operation.get_bool("last-document") is None {
-        raise Invalid("Send-Document requires last-document boolean")
+      match required_single_value(operation, "last-document") {
+        Boolean(_) => ()
+        _ => raise Invalid("Send-Document requires one last-document boolean")
       }
       if request.document.is_empty() {
         raise Invalid("Send-Document requires a document")
@@ -60,21 +62,31 @@ pub fn validate_request(request : Message) -> Unit raise IppError {
 
 ///|
 fn require_job_id(group : Group) -> Unit raise IppError {
-  match group.get_int("job-id") {
-    Some(value) if value > 0 => ()
-    _ => raise Invalid("operation requires positive job-id")
+  if group.attributes.length() < 4 || group.attributes[3].name != "job-id" {
+    raise Invalid("job-id must be the fourth operation attribute")
+  }
+  match required_single_value(group, "job-id") {
+    Integer(value) if value > 0 => ()
+    _ => raise Invalid("operation requires one positive integer job-id")
   }
 }
 
 ///|
 fn require_document_format(group : Group) -> Unit raise IppError {
-  match group.find("document-format") {
-    Some(attribute) =>
-      match attribute.first() {
-        Some(MimeType(format)) if valid_mime_type(format) => ()
-        _ => raise Invalid("invalid document-format tag or value")
-      }
-    None => raise Invalid("operation requires document-format")
+  match required_single_value(group, "document-format") {
+    MimeType(format) if valid_mime_type(format) => ()
+    _ => raise Invalid("invalid document-format tag or value")
+  }
+}
+
+///|
+fn required_single_value(
+  group : Group,
+  name : String,
+) -> IppValue raise IppError {
+  match group.find(name) {
+    Some(attribute) if attribute.values.length() == 1 => attribute.values[0]
+    _ => raise Invalid("operation requires exactly one value for \{name}")
   }
 }
 
