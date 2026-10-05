@@ -1,0 +1,9 @@
+import {
+  "liyun6666/moon-ipp" @ipp,
+  "moonbitlang/async",
+  "moonbitlang/async/http",
+  "moonbitlang/core/buffer",
+  "moonbitlang/core/debug",
+}
+
+supported_targets = "+native+js"
