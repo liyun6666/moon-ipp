@@ -4,6 +4,7 @@ priv struct StubTransport {
   wrong_id : Bool
   slow : Bool
   fail_print : Bool
+  reject_print : Bool
 }
 
 ///|
@@ -51,12 +52,19 @@ impl Transport for StubTransport with fn exchange(
     )
   }
   let id = request.request_id + (if self.wrong_id { 1 } else { 0 })
-  @ipp.encode(@ipp.Message::new(0, id, groups))
+  let status = if self.reject_print && request.code == 2 { 0x040b } else { 0 }
+  @ipp.encode(@ipp.Message::new(status, id, groups))
 }
 
 ///|
 fn stub() -> StubTransport {
-  { requests: [], wrong_id: false, slow: false, fail_print: false, }
+  {
+    requests: [],
+    wrong_id: false,
+    slow: false,
+    fail_print: false,
+    reject_print: false,
+  }
 }
 
 ///|
@@ -132,4 +140,39 @@ async test "wait terminates on completed job" {
   let observations = client.wait_job(27)
   assert_eq(observations.length(), 1)
   assert_eq(observations[0].job.state, Some(@ipp.Completed))
+}
+
+///|
+async test "known printer rejection remains distinct from unknown submission outcome" {
+  let transport = StubTransport::{ ..stub(), reject_print: true, }
+  let client = Client::new("ipp://localhost/ipp/print", transport)
+  try
+    client.print_job(
+      @ipp.JobOptions::new("Report", "application/pdf"),
+      b"pdf",
+      preflight=false,
+    )
+  catch {
+    error => assert_true(error is @ipp.Protocol(_))
+  } noraise {
+    _ => fail("expected server rejection")
+  }
+  assert_eq(transport.requests.length(), 1)
+}
+
+///|
+async test "concurrent caller cannot interleave a transaction" {
+  let transport = StubTransport::{ ..stub(), slow: true, }
+  let client = Client::new("ipp://localhost/ipp/print", transport)
+  @async.with_task_group(async fn(group) {
+    let first = group.spawn(async fn() { client.printer_attributes() })
+    @async.sleep(1)
+    try client.printer_attributes() catch {
+      error => assert_true(error is ConcurrentRequest)
+    } noraise {
+      _ => fail("concurrent request accepted")
+    }
+    let _ = first.wait()
+  })
+  assert_eq(transport.requests.length(), 1)
 }

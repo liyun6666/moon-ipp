@@ -155,6 +155,9 @@ pub fn encode(
           }
           _ => write_entry(output, value.tag(), name, encode_scalar(value))
         }
+        if output.length() > limits.max_message_bytes {
+          raise Limit("message bytes")
+        }
       }
       if output.length() > limits.max_message_bytes {
         raise Limit("message bytes")

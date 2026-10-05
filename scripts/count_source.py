@@ -10,7 +10,7 @@ root = Path(__file__).resolve().parents[1]
 counts = {}
 for path in sorted(root.rglob("*.mbt")):
     relative = path.relative_to(root)
-    if any(part in {".mooncakes", "_build", ".git", "node_modules"} for part in relative.parts):
+    if any(part in {".mooncakes", "_build", ".git", "node_modules", "examples"} for part in relative.parts):
         continue
     if path.name.endswith(("_test.mbt", "_wbtest.mbt")):
         continue

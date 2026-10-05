@@ -234,6 +234,7 @@ fn decode_collection(
     raise Limit("collection nesting")
   }
   let members : Array[Attribute] = []
+  let seen : Map[String, Bool] = Map([])
   let mut member_name = ""
   let mut member_values : Array[IppValue] = []
   while true {
@@ -264,6 +265,10 @@ fn decode_collection(
       if !valid_attribute_name(member_name) {
         raise Invalid("invalid collection member name")
       }
+      if seen.contains(member_name) {
+        raise Invalid("duplicate collection member")
+      }
+      seen[member_name] = true
       budget.attribute()
       member_values = []
     } else {
@@ -297,11 +302,16 @@ fn encode_collection(
   if depth > budget.limits.max_collection_depth {
     raise Limit("collection nesting")
   }
+  let seen : Map[String, Bool] = Map([])
   for field in members {
     budget.attribute()
     if !valid_attribute_name(field.name) || field.values.is_empty() {
       raise Invalid("invalid collection member")
     }
+    if seen.contains(field.name) {
+      raise Invalid("duplicate collection member")
+    }
+    seen[field.name] = true
     write_entry(output, 0x4a, "", encode_utf8(field.name))
     for value in field.values {
       budget.value()
@@ -314,6 +324,9 @@ fn encode_collection(
           encode_collection(output, children, budget, depth + 1)
         }
         _ => write_entry(output, value.tag(), "", encode_scalar(value))
+      }
+      if output.length() > budget.limits.max_message_bytes {
+        raise Limit("message bytes")
       }
     }
   }
