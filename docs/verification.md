@@ -2,6 +2,18 @@
 
 本页记录可复现验证方法；GitHub Actions 保存每次运行的实际结果。
 
+## 0.1.0 实测结果
+
+测试日期：2026-10-05。发布源码提交：`6c55fad1050271314e8d8b83709c137a18a9ef2f`。
+
+[完整成功 CI](https://github.com/liyun6666/moon-ipp/actions/runs/37303212132)：wasm-gc 35/35、JS 43/43、Linux native 43/43 测试通过；三个后端检查、native 构建、格式检查和独立 CUPS 全流程均通过。有效 MoonBit 实现 4,144 行，不含测试、注释、空行、示例、生成接口、依赖和构建文件。
+
+CUPS 收到的 PDF 与文本均与输入逐字节一致，两个任务完成、一个任务取消；不支持的格式没有产生新任务。`ipptool` 交叉校验与 JSON 字节往返通过。完整日志和 spool 在该运行的 artifact 中，结果摘要见 [cups-result.json](evidence/cups-result.json)。
+
+`moon publish` 返回 HTTP 200；[Mooncakes](https://mooncakes.io/docs/liyun6666/moon-ipp) 索引确认 `liyun6666/moon-ipp@0.1.0`，没有撤回。独立消费工程通过 `moon update` 从注册表下载 0.1.0，JS 消费测试 1/1 通过，验证编解码和 Client 公共接口，无本地路径依赖。
+
+验证工具链：moon 0.1.20260920、moonc v0.10.14+7d59c7ec9（2026-09-18）、async 0.22.4。后续文档提交不会改写已发布的 0.1.0 源码。
+
 ## 验证范围
 
 - wasm-gc：协议核心、纸张规格、参数、诊断和 CLI 参数解析。

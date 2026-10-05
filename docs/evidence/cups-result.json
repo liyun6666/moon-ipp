@@ -1,0 +1,12 @@
+{
+  "result": "passed",
+  "independent_server": "CUPS ippeveprinter",
+  "pdf_job_id": 1,
+  "canceled_job_id": 2,
+  "staged_job_id": 3,
+  "pdf_bytes_identical": true,
+  "text_bytes_identical": true,
+  "unsupported_format_not_submitted": true,
+  "ipptool_crosscheck": true,
+  "offline_json_roundtrip": true
+}
