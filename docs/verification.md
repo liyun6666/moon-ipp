@@ -14,6 +14,18 @@ CUPS 收到的 PDF 与文本均与输入逐字节一致，两个任务完成、�
 
 验证工具链：moon 0.1.20260920、moonc v0.10.14+7d59c7ec9（2026-09-18）、async 0.22.4。后续文档提交不会改写已发布的 0.1.0 源码。
 
+## 0.1.1 实测结果
+
+测试日期：2026-10-05。发布代码提交：`ba0228b3420cd61545aca773976f3c3ada02baef`。
+
+[完整成功 CI](https://github.com/liyun6666/moon-ipp/actions/runs/37307580858)：wasm-gc 39/39、JS 50/50、Linux 默认 native 50/50；标准 `moon check --deny-warn`、`moon test --deny-warn`、`moon build --deny-warn`、格式检查及独立 CUPS 流程均通过。有效实现为 4,172 行，计数边界保持不变；`moon info` 后公共接口没有改变。
+
+CUPS 验证继续覆盖两个任务完成、一个取消、格式拒绝不入队、文档字节相同与 ipptool 类型交叉校验。新增独立构造 1,048,832 字节二进制文档的 IPP → JSON → IPP 测试，JSON 超过 1 MiB，恢复结果逐字节一致。摘要见 [cups-result-0.1.1.json](evidence/cups-result-0.1.1.json)。
+
+`moon publish` 返回 HTTP 200；注册表确认 0.1.1、未撤回，发布时间为 2026-10-05 12:11:19 UTC。独立消费工程日志显示 `Downloading liyun6666/moon-ipp@0.1.1`，从注册表下载后 JS 严格检查及消费测试 1/1 通过，没有本地路径依赖。对下载包的全部 34 个 `.mbt` 文件与上述 Git 提交逐一比较，仅规范换行后无差异。
+
+赛事材料、工程与环境条件的完整自查见 [终审自查报告](终审自查报告.md)。
+
 ## 验证范围
 
 - wasm-gc：协议核心、纸张规格、参数、诊断和 CLI 参数解析。

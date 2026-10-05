@@ -134,3 +134,5 @@ python3 scripts/count_source.py --minimum 4001
 计数只含手写 `.mbt` 非空非注释实现行，排除测试、生成接口、依赖、构建文件及 Python 测试脚本。测试覆盖字节往返、截断、非法结构、集合预算、日期、URI、参数、任务状态和失败路径。详见 [验收记录](docs/verification.md)、[AI 辅助申报草稿（须参赛者人工撰写终稿）](docs/项目申报书.md) 和 [查重记录](docs/查重记录.md)。
 
 原创实现依据 [RFC 8010](https://www.rfc-editor.org/rfc/rfc8010) 和 [RFC 8011](https://www.rfc-editor.org/rfc/rfc8011)。[OpenPrinting CUPS](https://github.com/OpenPrinting/cups) 源码未被复制。依赖与许可证见 [第三方说明](THIRD_PARTY.md)。
+
+已完成工程验收并发布 0.1.1，证据与申报资格待确认项见 [终审自查报告](docs/终审自查报告.md)。报告不代表赛事审核通过；参赛申报终稿须由本人撰写。
