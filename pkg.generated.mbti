@@ -1,0 +1,531 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "liyun6666/moon-ipp"
+
+import {
+  "moonbitlang/core/buffer",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn bytes_from_hex(String) -> Bytes raise IppError
+
+pub fn bytes_to_hex(Bytes) -> String
+
+pub fn compare_capabilities(Capabilities, Capabilities, include_volatile? : Bool) -> Array[CapabilityChange]
+
+pub fn decode(Bytes, limits? : DecodeLimits) -> Message raise IppError
+
+pub fn diagnostics_have_errors(Array[Diagnostic]) -> Bool
+
+pub fn encode(Message, limits? : DecodeLimits) -> Bytes raise IppError
+
+pub fn group_name(Int) -> String
+
+pub fn hex_dump(Bytes, maximum? : Int, width? : Int) -> String raise IppError
+
+pub fn infer_document_format(String) -> String?
+
+pub fn is_safe_to_retry(Operation) -> Bool
+
+pub fn job_from_response(Message) -> Job raise IppError
+
+pub fn job_state_from_code(Int) -> JobState
+
+pub fn jobs_from_response(Message) -> Array[Job] raise IppError
+
+pub fn media_spec_from_collection(IppValue) -> MediaSpec raise IppError
+
+pub fn message_from_json(Json, limits? : DecodeLimits) -> Message raise IppError
+
+pub fn operation_from_code(Int) -> Operation?
+
+pub fn parse_page_ranges(String) -> Array[PageRange] raise IppError
+
+pub fn printer_state_from_code(Int) -> PrinterState
+
+pub fn require_success(Message) -> Unit raise IppError
+
+pub fn response_status_message(Message) -> String
+
+pub fn sides_from_string(String) -> Sides raise IppError
+
+pub fn status_name(Int) -> String
+
+pub fn summarize_queue(Array[Job]) -> QueueSummary raise IppError
+
+pub fn unsupported_attributes(Message) -> Array[Attribute]
+
+pub fn valid_attribute_name(String) -> Bool
+
+pub fn valid_mime_type(String) -> Bool
+
+pub fn validate_job_observation(Job?, Job) -> Unit raise IppError
+
+pub fn validate_request(Message) -> Unit raise IppError
+
+pub fn validate_response(Message, Message) -> Unit raise IppError
+
+pub fn value_tag_name(Int) -> String
+
+pub fn volatile_printer_attribute(String) -> Bool
+
+pub fn with_media_collection(Message, MediaSpec) -> Message raise IppError
+
+// Errors
+pub(all) suberror IppError {
+  Invalid(String)
+  Truncated(Int, Int)
+  Limit(String)
+  Protocol(String)
+  Unsupported(String)
+} derive(@debug.Debug)
+pub fn IppError::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+pub(all) struct Attribute {
+  name : String
+  values : Array[IppValue]
+} derive(Eq, @debug.Debug)
+pub fn Attribute::equal(Self, Self) -> Bool
+pub fn Attribute::first(Self) -> IppValue?
+pub fn Attribute::integers(String, Array[Int]) -> Self
+pub fn Attribute::keywords(String, Array[String]) -> Self
+pub fn Attribute::new(String, IppValue) -> Self
+pub fn Attribute::not_equal(Self, Self) -> Bool
+pub fn Attribute::string_values(Self) -> Array[String]
+pub fn Attribute::to_json(Self) -> Json
+pub fn Attribute::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Capabilities {
+  printer : Group
+} derive(Eq, @debug.Debug)
+pub fn Capabilities::accepting_jobs(Self) -> Bool?
+pub fn Capabilities::choose_format(Self, Array[String]) -> String raise IppError
+pub fn Capabilities::default_options(Self, String, String) -> JobOptions raise IppError
+pub fn Capabilities::document_formats(Self) -> Array[String]
+pub fn Capabilities::equal(Self, Self) -> Bool
+pub fn Capabilities::from_response(Message) -> Self raise IppError
+pub fn Capabilities::health(Self) -> PrinterHealth
+pub fn Capabilities::integers(Self, String) -> Array[Int]
+pub fn Capabilities::media(Self) -> Array[String]
+pub fn Capabilities::media_database(Self) -> Array[MediaSpec] raise IppError
+pub fn Capabilities::name(Self) -> String
+pub fn Capabilities::not_equal(Self, Self) -> Bool
+pub fn Capabilities::plan(Self, JobOptions, Int) -> PrintPlan raise IppError
+pub fn Capabilities::require_options(Self, JobOptions, document_bytes? : Int) -> Unit raise IppError
+pub fn Capabilities::resolutions(Self) -> Array[Resolution]
+pub fn Capabilities::strings(Self, String) -> Array[String]
+pub fn Capabilities::summary_json(Self) -> Json
+pub fn Capabilities::supports_operation(Self, Operation) -> Bool?
+pub fn Capabilities::to_repr(Self) -> @debug.Repr
+pub fn Capabilities::validate_media(Self, MediaSpec) -> Array[Diagnostic] raise IppError
+pub fn Capabilities::validate_options(Self, JobOptions, document_bytes? : Int) -> Array[Diagnostic] raise IppError
+
+pub(all) struct CapabilityChange {
+  attribute : String
+  kind : ChangeKind
+  before : Array[IppValue]
+  after : Array[IppValue]
+  transient : Bool
+} derive(Eq, @debug.Debug)
+pub fn CapabilityChange::equal(Self, Self) -> Bool
+pub fn CapabilityChange::not_equal(Self, Self) -> Bool
+pub fn CapabilityChange::to_json(Self) -> Json
+pub fn CapabilityChange::to_repr(Self) -> @debug.Repr
+
+pub(all) enum ChangeKind {
+  Added
+  Removed
+  Changed
+} derive(Eq, @debug.Debug)
+pub fn ChangeKind::equal(Self, Self) -> Bool
+pub fn ChangeKind::not_equal(Self, Self) -> Bool
+pub fn ChangeKind::to_repr(Self) -> @debug.Repr
+
+pub(all) struct DecodeLimits {
+  max_message_bytes : Int
+  max_attributes : Int
+  max_values : Int
+  max_collection_depth : Int
+  max_document_bytes : Int
+} derive(Eq, @debug.Debug)
+pub fn DecodeLimits::defaults() -> Self
+pub fn DecodeLimits::equal(Self, Self) -> Bool
+pub fn DecodeLimits::not_equal(Self, Self) -> Bool
+pub fn DecodeLimits::to_repr(Self) -> @debug.Repr
+pub fn DecodeLimits::validate(Self) -> Unit raise IppError
+
+pub(all) struct Diagnostic {
+  severity : Severity
+  attribute : String
+  message : String
+} derive(Eq, @debug.Debug)
+pub fn Diagnostic::equal(Self, Self) -> Bool
+pub fn Diagnostic::not_equal(Self, Self) -> Bool
+pub fn Diagnostic::to_json(Self) -> Json
+pub fn Diagnostic::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Group {
+  tag : Int
+  attributes : Array[Attribute]
+} derive(Eq, @debug.Debug)
+pub fn Group::equal(Self, Self) -> Bool
+pub fn Group::find(Self, String) -> Attribute?
+pub fn Group::get_bool(Self, String) -> Bool?
+pub fn Group::get_int(Self, String) -> Int?
+pub fn Group::get_string(Self, String) -> String?
+pub fn Group::job(Array[Attribute]) -> Self
+pub fn Group::not_equal(Self, Self) -> Bool
+pub fn Group::operation(Array[Attribute]) -> Self
+pub fn Group::printer(Array[Attribute]) -> Self
+pub fn Group::to_json(Self) -> Json
+pub fn Group::to_repr(Self) -> @debug.Repr
+
+pub(all) struct IppDateTime {
+  year : Int
+  month : Int
+  day : Int
+  hour : Int
+  minute : Int
+  second : Int
+  decisecond : Int
+  utc_direction : Int
+  utc_hours : Int
+  utc_minutes : Int
+} derive(Eq, @debug.Debug)
+pub fn IppDateTime::equal(Self, Self) -> Bool
+pub fn IppDateTime::not_equal(Self, Self) -> Bool
+pub fn IppDateTime::to_repr(Self) -> @debug.Repr
+pub fn IppDateTime::validate(Self) -> Unit raise IppError
+
+pub(all) enum IppValue {
+  Integer(Int)
+  Enumeration(Int)
+  Boolean(Bool)
+  Range(Int, Int)
+  ResolutionValue(Resolution)
+  DateTime(IppDateTime)
+  Text(String)
+  Name(String)
+  Keyword(String)
+  Uri(String)
+  UriScheme(String)
+  Charset(String)
+  Language(String)
+  MimeType(String)
+  Octets(Bytes)
+  TextWithLanguage(String, String)
+  NameWithLanguage(String, String)
+  Collection(Array[Attribute])
+  OutOfBand(Int)
+  Unknown(Int, Bytes)
+} derive(Eq, @debug.Debug)
+pub fn IppValue::as_bool(Self) -> Bool?
+pub fn IppValue::as_int(Self) -> Int?
+pub fn IppValue::as_string(Self) -> String?
+pub fn IppValue::equal(Self, Self) -> Bool
+pub fn IppValue::not_equal(Self, Self) -> Bool
+pub fn IppValue::tag(Self) -> Int
+pub fn IppValue::to_json(Self) -> Json
+pub fn IppValue::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Job {
+  id : Int
+  uri : String?
+  name : String?
+  state : JobState?
+  reasons : Array[String]
+  message : String?
+  impressions_completed : Int?
+  attributes : Group
+} derive(Eq, @debug.Debug)
+pub fn Job::equal(Self, Self) -> Bool
+pub fn Job::from_group(Group) -> Self raise IppError
+pub fn Job::not_equal(Self, Self) -> Bool
+pub fn Job::to_json(Self) -> Json
+pub fn Job::to_repr(Self) -> @debug.Repr
+
+pub(all) struct JobObservation {
+  job : Job
+  elapsed_ms : Int
+} derive(Eq, @debug.Debug)
+pub fn JobObservation::equal(Self, Self) -> Bool
+pub fn JobObservation::not_equal(Self, Self) -> Bool
+pub fn JobObservation::to_repr(Self) -> @debug.Repr
+
+pub(all) struct JobOptions {
+  name : String
+  document_format : String
+  copies : Int
+  media : String?
+  sides : Sides?
+  color_mode : String?
+  resolution : Resolution?
+  print_quality : Int?
+  orientation : Int?
+  number_up : Int?
+  page_ranges : Array[PageRange]
+} derive(Eq, @debug.Debug)
+pub fn JobOptions::attributes(Self) -> Array[Attribute]
+pub fn JobOptions::equal(Self, Self) -> Bool
+pub fn JobOptions::new(String, String) -> Self
+pub fn JobOptions::not_equal(Self, Self) -> Bool
+pub fn JobOptions::to_json(Self) -> Json
+pub fn JobOptions::to_repr(Self) -> @debug.Repr
+pub fn JobOptions::validate(Self) -> Unit raise IppError
+
+pub(all) enum JobState {
+  Pending
+  PendingHeld
+  Processing
+  ProcessingStopped
+  Canceled
+  Aborted
+  Completed
+  Other(Int)
+} derive(Eq, @debug.Debug)
+pub fn JobState::code(Self) -> Int
+pub fn JobState::equal(Self, Self) -> Bool
+pub fn JobState::name(Self) -> String
+pub fn JobState::not_equal(Self, Self) -> Bool
+pub fn JobState::terminal(Self) -> Bool
+pub fn JobState::to_repr(Self) -> @debug.Repr
+
+pub(all) struct MediaMargins {
+  top : Int
+  bottom : Int
+  left : Int
+  right : Int
+} derive(Eq, @debug.Debug)
+pub fn MediaMargins::equal(Self, Self) -> Bool
+pub fn MediaMargins::new(Int, Int, Int, Int) -> Self raise IppError
+pub fn MediaMargins::not_equal(Self, Self) -> Bool
+pub fn MediaMargins::to_repr(Self) -> @debug.Repr
+
+pub(all) struct MediaSize {
+  x : Int
+  y : Int
+} derive(Eq, @debug.Debug)
+pub fn MediaSize::a4() -> Self
+pub fn MediaSize::collection(Self) -> IppValue
+pub fn MediaSize::equal(Self, Self) -> Bool
+pub fn MediaSize::letter() -> Self
+pub fn MediaSize::new(Int, Int) -> Self raise IppError
+pub fn MediaSize::not_equal(Self, Self) -> Bool
+pub fn MediaSize::to_repr(Self) -> @debug.Repr
+
+pub(all) struct MediaSpec {
+  size : MediaSize
+  margins : MediaMargins?
+  source : String?
+  kind : String?
+  name : String?
+} derive(Eq, @debug.Debug)
+pub fn MediaSpec::collection(Self) -> IppValue raise IppError
+pub fn MediaSpec::equal(Self, Self) -> Bool
+pub fn MediaSpec::new(MediaSize) -> Self
+pub fn MediaSpec::not_equal(Self, Self) -> Bool
+pub fn MediaSpec::to_repr(Self) -> @debug.Repr
+pub fn MediaSpec::validate(Self) -> Unit raise IppError
+
+pub(all) struct Message {
+  version : Version
+  code : Int
+  request_id : Int
+  groups : Array[Group]
+  document : Bytes
+} derive(Eq, @debug.Debug)
+pub fn Message::equal(Self, Self) -> Bool
+pub fn Message::find(Self, Int, String) -> Attribute?
+pub fn Message::find_group(Self, Int) -> Group?
+pub fn Message::is_success(Self) -> Bool
+pub fn Message::new(Int, Int, Array[Group]) -> Self
+pub fn Message::not_equal(Self, Self) -> Bool
+pub fn Message::to_json(Self) -> Json
+pub fn Message::to_repr(Self) -> @debug.Repr
+pub fn Message::with_document(Self, Bytes) -> Self
+
+pub struct MessageCollector {
+  limits : DecodeLimits
+  buffer : @buffer.Buffer
+  mut closed : Bool
+}
+pub fn MessageCollector::feed(Self, Bytes) -> Unit raise IppError
+pub fn MessageCollector::finish(Self) -> Message raise IppError
+pub fn MessageCollector::length(Self) -> Int
+pub fn MessageCollector::new(limits? : DecodeLimits) -> Self raise IppError
+
+pub(all) enum Operation {
+  PrintJob
+  ValidateJob
+  CreateJob
+  SendDocument
+  CancelJob
+  GetJobAttributes
+  GetJobs
+  GetPrinterAttributes
+} derive(Eq, @debug.Debug)
+pub fn Operation::code(Self) -> Int
+pub fn Operation::equal(Self, Self) -> Bool
+pub fn Operation::name(Self) -> String
+pub fn Operation::not_equal(Self, Self) -> Bool
+pub fn Operation::to_repr(Self) -> @debug.Repr
+
+pub(all) struct PageRange {
+  first : Int
+  last : Int
+} derive(Eq, @debug.Debug)
+pub fn PageRange::equal(Self, Self) -> Bool
+pub fn PageRange::new(Int, Int) -> Self raise IppError
+pub fn PageRange::not_equal(Self, Self) -> Bool
+pub fn PageRange::to_repr(Self) -> @debug.Repr
+
+pub(all) struct PollPolicy {
+  interval_ms : Int
+  maximum_polls : Int
+} derive(Eq, @debug.Debug)
+pub fn PollPolicy::defaults() -> Self
+pub fn PollPolicy::equal(Self, Self) -> Bool
+pub fn PollPolicy::not_equal(Self, Self) -> Bool
+pub fn PollPolicy::to_repr(Self) -> @debug.Repr
+pub fn PollPolicy::validate(Self) -> Unit raise IppError
+
+pub(all) struct PrintPlan {
+  printer : String
+  options : JobOptions
+  document_bytes : Int
+  diagnostics : Array[Diagnostic]
+} derive(@debug.Debug)
+pub fn PrintPlan::can_submit(Self) -> Bool
+pub fn PrintPlan::to_json(Self) -> Json
+pub fn PrintPlan::to_repr(Self) -> @debug.Repr
+
+pub(all) struct PrinterHealth {
+  name : String
+  state : PrinterState?
+  accepting_jobs : Bool?
+  queued_jobs : Int?
+  reasons : Array[String]
+  diagnostics : Array[Diagnostic]
+} derive(@debug.Debug)
+pub fn PrinterHealth::ready(Self) -> Bool
+pub fn PrinterHealth::to_json(Self) -> Json
+pub fn PrinterHealth::to_repr(Self) -> @debug.Repr
+
+pub(all) enum PrinterState {
+  Idle
+  Processing
+  Stopped
+  Unrecognized(Int)
+} derive(Eq, @debug.Debug)
+pub fn PrinterState::equal(Self, Self) -> Bool
+pub fn PrinterState::not_equal(Self, Self) -> Bool
+pub fn PrinterState::text(Self) -> String
+pub fn PrinterState::to_repr(Self) -> @debug.Repr
+
+pub(all) struct PrinterUri {
+  scheme : String
+  host : String
+  port : Int
+  path : String
+  ipv6 : Bool
+} derive(Eq, @debug.Debug)
+pub fn PrinterUri::authority(Self) -> String
+pub fn PrinterUri::equal(Self, Self) -> Bool
+pub fn PrinterUri::http_url(Self) -> String
+pub fn PrinterUri::not_equal(Self, Self) -> Bool
+pub fn PrinterUri::parse(String) -> Self raise IppError
+pub fn PrinterUri::secure(Self) -> Bool
+pub fn PrinterUri::text(Self) -> String
+pub fn PrinterUri::to_repr(Self) -> @debug.Repr
+
+pub(all) struct QueueSummary {
+  total : Int
+  pending : Int
+  held : Int
+  processing : Int
+  stopped : Int
+  canceled : Int
+  aborted : Int
+  completed : Int
+  unknown : Int
+} derive(Eq, @debug.Debug)
+pub fn QueueSummary::equal(Self, Self) -> Bool
+pub fn QueueSummary::not_equal(Self, Self) -> Bool
+pub fn QueueSummary::to_json(Self) -> Json
+pub fn QueueSummary::to_repr(Self) -> @debug.Repr
+
+pub(all) struct RequestContext {
+  printer : PrinterUri
+  user : String
+  language : String
+  version : Version
+} derive(Eq, @debug.Debug)
+pub fn RequestContext::cancel_job(Self, Int, Int) -> Message raise IppError
+pub fn RequestContext::create_job(Self, Int, JobOptions) -> Message raise IppError
+pub fn RequestContext::equal(Self, Self) -> Bool
+pub fn RequestContext::get_jobs(Self, Int, which? : String, mine? : Bool, limit? : Int) -> Message raise IppError
+pub fn RequestContext::job_attributes(Self, Int, Int) -> Message raise IppError
+pub fn RequestContext::new(String, user? : String, language? : String) -> Self raise IppError
+pub fn RequestContext::not_equal(Self, Self) -> Bool
+pub fn RequestContext::print_job(Self, Int, JobOptions, Bytes) -> Message raise IppError
+pub fn RequestContext::printer_attributes(Self, Int, requested? : Array[String]) -> Message raise IppError
+pub fn RequestContext::send_document(Self, Int, Int, String, Bytes, last? : Bool) -> Message raise IppError
+pub fn RequestContext::to_repr(Self) -> @debug.Repr
+pub fn RequestContext::validate_job(Self, Int, JobOptions) -> Message raise IppError
+
+pub(all) struct Resolution {
+  x : Int
+  y : Int
+  units : Int
+} derive(Eq, @debug.Debug)
+pub fn Resolution::dpi(Int, Int) -> Self raise IppError
+pub fn Resolution::equal(Self, Self) -> Bool
+pub fn Resolution::not_equal(Self, Self) -> Bool
+pub fn Resolution::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Severity {
+  Warning
+  Error
+} derive(Eq, @debug.Debug)
+pub fn Severity::equal(Self, Self) -> Bool
+pub fn Severity::not_equal(Self, Self) -> Bool
+pub fn Severity::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Sides {
+  OneSided
+  TwoSidedLongEdge
+  TwoSidedShortEdge
+} derive(Eq, @debug.Debug)
+pub fn Sides::equal(Self, Self) -> Bool
+pub fn Sides::keyword(Self) -> String
+pub fn Sides::not_equal(Self, Self) -> Bool
+pub fn Sides::to_repr(Self) -> @debug.Repr
+
+pub(all) enum SubmissionState {
+  NotSent
+  Sending
+  OutcomeUnknown
+  Rejected(Int, String)
+  Accepted(Job)
+} derive(Eq, @debug.Debug)
+pub fn SubmissionState::equal(Self, Self) -> Bool
+pub fn SubmissionState::may_submit_again(Self) -> Bool
+pub fn SubmissionState::not_equal(Self, Self) -> Bool
+pub fn SubmissionState::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Version {
+  major : Int
+  minor : Int
+} derive(Eq, @debug.Debug)
+pub fn Version::equal(Self, Self) -> Bool
+pub fn Version::new(Int, Int) -> Self raise IppError
+pub fn Version::not_equal(Self, Self) -> Bool
+pub fn Version::text(Self) -> String
+pub fn Version::to_repr(Self) -> @debug.Repr
+pub fn Version::v11() -> Self
+pub fn Version::v20() -> Self
+
+// Type aliases
+
+// Traits

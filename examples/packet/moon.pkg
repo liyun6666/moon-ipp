@@ -1,0 +1,5 @@
+import {
+  "liyun6666/moon-ipp" @ipp,
+}
+
+pkgtype(kind: "executable")

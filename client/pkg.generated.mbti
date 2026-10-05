@@ -1,0 +1,57 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "liyun6666/moon-ipp/client"
+
+import {
+  "liyun6666/moon-ipp",
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+pub(all) suberror ClientError {
+  HttpStatus(Int)
+  UnexpectedContentType(String)
+  ResponseTooLarge
+  ConcurrentRequest
+  SubmissionUncertain(String)
+  JobWaitExpired(Int)
+} derive(@debug.Debug)
+pub fn ClientError::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+pub struct Client {
+  context : @moon-ipp.RequestContext
+  transport : &Transport
+  timeout_ms : Int
+  limits : @moon-ipp.DecodeLimits
+  mut next_id : Int
+  mut busy : Bool
+}
+pub async fn Client::cancel_job(Self, Int) -> @moon-ipp.Message
+pub async fn Client::capabilities(Self) -> @moon-ipp.Capabilities
+pub async fn Client::create_job(Self, @moon-ipp.JobOptions) -> @moon-ipp.Job
+pub fn Client::endpoint(Self) -> @moon-ipp.PrinterUri
+pub async fn Client::exchange(Self, @moon-ipp.Message) -> @moon-ipp.Message
+pub async fn Client::job(Self, Int) -> @moon-ipp.Job
+pub async fn Client::jobs(Self, which? : String, mine? : Bool, limit? : Int) -> Array[@moon-ipp.Job]
+pub fn Client::new(String, &Transport, user? : String, timeout_ms? : Int, limits? : @moon-ipp.DecodeLimits) -> Self raise @moon-ipp.IppError
+pub async fn Client::print_job(Self, @moon-ipp.JobOptions, Bytes, preflight? : Bool) -> @moon-ipp.Job
+pub async fn Client::printer_attributes(Self, requested? : Array[String]) -> @moon-ipp.Message
+pub async fn Client::send_document(Self, Int, String, Bytes, last? : Bool) -> @moon-ipp.Message
+pub async fn Client::validate_job(Self, @moon-ipp.JobOptions) -> @moon-ipp.Message
+pub async fn Client::wait_job(Self, Int, policy? : @moon-ipp.PollPolicy) -> Array[@moon-ipp.JobObservation]
+
+pub struct HttpTransport {
+  authorization : String?
+}
+pub async fn HttpTransport::exchange(Self, @moon-ipp.PrinterUri, Bytes, Int) -> Bytes
+pub fn HttpTransport::new(authorization? : String) -> Self raise @moon-ipp.IppError
+pub impl Transport for HttpTransport
+
+// Type aliases
+
+// Traits
+pub trait Transport {
+  async fn exchange(Self, @moon-ipp.PrinterUri, Bytes, Int) -> Bytes
+}
