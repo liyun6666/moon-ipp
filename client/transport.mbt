@@ -48,7 +48,11 @@ pub impl Transport for HttpTransport with fn exchange(
   if maximum < 9 {
     raise @ipp.Invalid("response limit must be at least 9")
   }
-  let connection = @http.Client(endpoint.http_url())
+  if self.authorization is Some(_) && !endpoint.secure() {
+    raise @ipp.Invalid("authorization requires ipps transport")
+  }
+  let scheme = if endpoint.secure() { "https" } else { "http" }
+  let connection = @http.Client("\{scheme}://\{endpoint.authority()}/")
   defer connection.close()
   let headers : Map[@http.CaseInsensitiveString, String] = Map([
     (@http.CaseInsensitiveString("Content-Type"), "application/ipp"),
