@@ -1,0 +1,12 @@
+name: CI
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: moonbitlang/setup-moonbit@v1
+      - run: moon check --deny-warn
+      - run: moon test --deny-warn
+      - run: moon build
+      - run: moon fmt --check

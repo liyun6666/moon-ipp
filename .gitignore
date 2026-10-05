@@ -1,0 +1,6 @@
+_build/
+.mooncakes/
+node_modules/
+interop-output/
+*.log
+*.tmp
