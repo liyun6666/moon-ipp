@@ -34,4 +34,4 @@ git log --oneline --reverse
 
 ## 失败记录
 
-早期 CI 使用不存在的 setup action，已改为官方工具链安装入口。独立测试发现 Ubuntu CUPS 不支持新版 `-roff` 参数，已使用 Avahi 初始化；随后发现错误信息只显示构造器名称，已保留可读原因。失败记录保留在公开 Actions 历史，最终验收以修复后的成功运行及其证据为准。
+早期 CI 使用不存在的 setup action，已改为官方工具链安装入口。独立测试发现 Ubuntu CUPS 不支持新版 `-roff` 参数，已使用 Avahi 初始化；随后发现错误信息只显示构造器名称，已保留可读原因。ipptool 默认只请求任务 ID/URI，交叉校验已显式请求 job-state。失败记录保留在公开 Actions 历史，最终验收以修复后的成功运行及其证据为准。

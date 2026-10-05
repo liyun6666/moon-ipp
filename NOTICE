@@ -1,0 +1,6 @@
+moon-ipp
+Copyright 2026 马昀昀
+
+Licensed under the Apache License, Version 2.0.
+This is an original MoonBit implementation of the Internet Printing Protocol.
+Third-party dependencies and test tools are described in THIRD_PARTY.md.

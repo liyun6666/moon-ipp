@@ -110,6 +110,7 @@ ATTR charset attributes-charset utf-8
 ATTR language attributes-natural-language en
 ATTR uri printer-uri $uri
 ATTR keyword which-jobs all
+ATTR keyword requested-attributes job-id,job-state
 STATUS successful-ok
 EXPECT job-id OF-TYPE integer IN-GROUP job-attributes-tag
 EXPECT job-state OF-TYPE enum IN-GROUP job-attributes-tag
