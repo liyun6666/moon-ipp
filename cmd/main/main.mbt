@@ -169,12 +169,33 @@ async fn execute(arguments : @cli.Arguments) -> Unit {
 }
 
 ///|
+fn describe_error(error : Error) -> String {
+  match error {
+    @ipp.Invalid(message) => "invalid input: \{message}"
+    @ipp.Protocol(message) => "IPP response error: \{message}"
+    @ipp.Unsupported(message) => "unsupported: \{message}"
+    @ipp.Limit(message) => "resource limit: \{message}"
+    @ipp.Truncated(offset, count) =>
+      "truncated IPP at byte \{offset}, needed \{count} bytes"
+    @client.HttpStatus(code) => "HTTP status \{code}"
+    @client.UnexpectedContentType(value) =>
+      "expected application/ipp; received \{value}"
+    @client.ResponseTooLarge => "HTTP response exceeds configured byte limit"
+    @client.ConcurrentRequest => "client already has a request in progress"
+    @client.SubmissionUncertain(message) =>
+      "submission outcome unknown: \{message}"
+    @client.JobWaitExpired(id) => "polling limit reached for job \{id}"
+    _ => "\{error}"
+  }
+}
+
+///|
 async fn main {
   let args = @env.args()
   let user_args = if args.is_empty() { [] } else { args[1:].to_owned() }
   execute(@cli.parse(user_args)) catch {
     error => {
-      @stdio.stderr.write("moon-ipp: \{error}\n") catch {
+      @stdio.stderr.write("moon-ipp: \{describe_error(error)}\n") catch {
         _ => ()
       }
       exit_process(1)
