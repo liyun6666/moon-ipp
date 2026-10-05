@@ -11,7 +11,7 @@ MoonBit 原生 IPP 网络打印协议库和客户端。业务系统可以查询�
 需要 MoonBit stable 2026-09-18 或更新的兼容版本。网络客户端依赖 `moonbitlang/async@0.22.4`；native 构建需要 C 编译器，Windows 异步库要求 MSVC。Linux CI 验证 native，JS 客户端通过 Node.js 测试。
 
 ```sh
-moon add liyun6666/moon-ipp@0.1.0
+moon add liyun6666/moon-ipp@0.1.1
 ```
 
 在 `moon.pkg` 中导入所需包：
@@ -115,7 +115,7 @@ python3 scripts/interop_cups.py
 
 文档由上游生成，须是设备支持的格式。首版不提供文档转换、渲染器、USB 驱动、DNS-SD 自动发现、通知订阅或完整 IPP Everywhere 认证，不声称覆盖全部厂商扩展。HTTP 401/403 等明确报错；认证使用调用方设置的 `MOON_IPP_AUTHORIZATION` 环境变量并要求 `ipps://`，TLS 使用系统信任根。不要把秘密写进 URI 或日志。
 
-提交中丢失响应会抛出 `SubmissionUncertain`：设备可能已接收文档，应查询队列并核对，客户端不会自动重发。终态为 completed、canceled、aborted；超出轮询次数报错。`PrintPlan` 是参数与状态预览，不保证传输成功。
+提交中丢失响应，或成功响应缺少可用任务编号，会抛出 `SubmissionUncertain`：设备可能已接收文档，应查询队列并核对，客户端不会自动重发。任务查询还会核对返回的 job-id，防止把其他任务的完成状态当作本次结果。终态为 completed、canceled、aborted；超出轮询次数报错。`PrintPlan` 是参数与状态预览，不保证传输成功。
 
 ## 验证与维护
 
@@ -123,13 +123,14 @@ python3 scripts/interop_cups.py
 moon check --target wasm-gc --deny-warn
 moon test --target wasm-gc --deny-warn
 moon test --target js --deny-warn
-moon test --target native --deny-warn
-moon build --target native --deny-warn
+moon check --deny-warn
+moon test --deny-warn
+moon build --deny-warn
 moon info
 moon fmt --check
 python3 scripts/count_source.py --minimum 4001
 ```
 
-计数只含手写 `.mbt` 非空非注释实现行，排除测试、生成接口、依赖、构建文件及 Python 测试脚本。测试覆盖字节往返、截断、非法结构、集合预算、日期、URI、参数、任务状态和失败路径。详见 [验收记录](docs/verification.md)、[申报书](docs/项目申报书.md) 和 [查重记录](docs/查重记录.md)。
+计数只含手写 `.mbt` 非空非注释实现行，排除测试、生成接口、依赖、构建文件及 Python 测试脚本。测试覆盖字节往返、截断、非法结构、集合预算、日期、URI、参数、任务状态和失败路径。详见 [验收记录](docs/verification.md)、[AI 辅助申报草稿（须参赛者人工撰写终稿）](docs/项目申报书.md) 和 [查重记录](docs/查重记录.md)。
 
 原创实现依据 [RFC 8010](https://www.rfc-editor.org/rfc/rfc8010) 和 [RFC 8011](https://www.rfc-editor.org/rfc/rfc8011)。[OpenPrinting CUPS](https://github.com/OpenPrinting/cups) 源码未被复制。依赖与许可证见 [第三方说明](THIRD_PARTY.md)。

@@ -359,7 +359,7 @@ pub fn parse(arguments : Array[String]) -> Arguments raise @ipp.IppError {
 ///|
 pub fn help() -> String {
   let text =
-    #|moon-ipp 0.1.0 — MoonBit IPP library and client
+    #|moon-ipp 0.1.1 — MoonBit IPP library and client
     #|Usage: moon run cmd/main --target native -- <command> [options]
     #|
     #|Commands:

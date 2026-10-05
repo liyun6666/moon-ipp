@@ -25,7 +25,11 @@ async fn read_bytes(path : String, maximum : Int) -> Bytes {
 
 ///|
 async fn read_json(path : String) -> Json {
-  let bytes = read_bytes(path, 1048576)
+  let limits = @ipp.DecodeLimits::defaults()
+  // A binary document becomes twice as large in hexadecimal JSON. Reserve
+  // additional space for escaped attribute strings and structural metadata.
+  let maximum = limits.max_document_bytes * 2 + limits.max_message_bytes * 8
+  let bytes = read_bytes(path, maximum)
   let text = @utf8.decode(bytes)
   @json.parse(text)
 }
@@ -63,7 +67,7 @@ async fn execute(arguments : @cli.Arguments) -> Unit {
       return
     }
     @cli.Version => {
-      @stdio.stdout.write("moon-ipp 0.1.0\n")
+      @stdio.stdout.write("moon-ipp 0.1.1\n")
       return
     }
     @cli.Decode => {

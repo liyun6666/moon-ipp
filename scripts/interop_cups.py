@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import socket
+import struct
 import subprocess
 import time
 
@@ -124,12 +125,32 @@ EXPECT job-state OF-TYPE enum IN-GROUP job-attributes-tag
     cli("decode", "--input", wire, "--output", decoded)
     assert json.loads(decoded.read_text()) == caps
     assert cli("compare", "--input", OUT / "capabilities.json", "--other", decoded) == []
+    # A useful document larger than the old 1 MiB JSON input cap must round-trip.
+    # Assemble the IPP wire fixture independently using RFC 8010 field widths.
+    def wire_attribute(tag, name, value):
+        name, value = name.encode(), value.encode()
+        return bytes([tag]) + struct.pack(">H", len(name)) + name + struct.pack(">H", len(value)) + value
+    payload = bytes(range(256)) * 4097
+    header = struct.pack(">BBHi", 2, 0, 2, 1) + b"\x01"
+    header += wire_attribute(0x47, "attributes-charset", "utf-8")
+    header += wire_attribute(0x48, "attributes-natural-language", "en")
+    header += wire_attribute(0x45, "printer-uri", URI)
+    header += wire_attribute(0x49, "document-format", "application/octet-stream")
+    large_wire = OUT / "binary-document.ipp"
+    large_json = OUT / "binary-document.json"
+    restored = OUT / "binary-document-restored.ipp"
+    large_wire.write_bytes(header + b"\x03" + payload)
+    cli("decode", "--input", large_wire, "--output", large_json)
+    assert large_json.stat().st_size > 1048576
+    cli("encode", "--input", large_json, "--output", restored)
+    assert restored.read_bytes() == large_wire.read_bytes(), "large binary JSON round-trip changed bytes"
     (OUT / "result.json").write_text(json.dumps({
         "result": "passed", "independent_server": "CUPS ippeveprinter",
         "pdf_job_id": job["id"], "canceled_job_id": held["id"], "staged_job_id": staged["id"],
         "pdf_bytes_identical": True, "text_bytes_identical": True,
         "unsupported_format_not_submitted": True, "ipptool_crosscheck": True,
         "offline_json_roundtrip": True,
+        "large_binary_document_roundtrip": True,
     }, indent=2))
     print("CUPS interoperability passed: PDF, preflight rejection, cancel, create/send, queue, ipptool, JSON")
 finally:
