@@ -18,17 +18,17 @@ pub fn Version::new(major : Int, minor : Int) -> Version raise IppError {
   if major < 1 || major > 2 || minor < 0 || minor > 2 {
     raise Invalid("unsupported IPP version")
   }
-  { major, minor }
+  { major, minor, }
 }
 
 ///|
 pub fn Version::v11() -> Version {
-  { major: 1, minor: 1 }
+  { major: 1, minor: 1, }
 }
 
 ///|
 pub fn Version::v20() -> Version {
-  { major: 2, minor: 0 }
+  { major: 2, minor: 0, }
 }
 
 ///|
