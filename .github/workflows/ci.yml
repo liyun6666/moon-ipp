@@ -1,12 +1,40 @@
 name: CI
 on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
 jobs:
-  core:
+  verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: moonbitlang/setup-moonbit@v1
-      - run: moon check --deny-warn
-      - run: moon test --deny-warn
-      - run: moon build
-      - run: moon fmt --check
+      - name: Install MoonBit stable
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Resolve dependencies
+        run: |
+          moon version --all
+          moon update
+          moon install
+      - name: Core and client checks
+        run: |
+          moon check --target wasm-gc --deny-warn
+          moon test --target wasm-gc --deny-warn
+          moon check --target js --deny-warn
+          moon test --target js --deny-warn
+          moon check --target native --deny-warn
+          moon test --target native --deny-warn
+          moon build --target native --deny-warn
+          moon fmt --check
+          python3 scripts/count_source.py --minimum 4001
+      - name: Install independent CUPS implementation
+        run: sudo apt-get update && sudo apt-get install -y cups-ipp-utils
+      - name: Exercise native client against CUPS
+        run: python3 scripts/interop_cups.py
+      - name: Preserve interoperability evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cups-interoperability-evidence
+          path: interop-output/
