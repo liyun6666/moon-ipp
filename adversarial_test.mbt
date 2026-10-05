@@ -365,3 +365,32 @@ test "JSON rejects fractional request IDs and invalid tagged values" {
     _ => fail("fractional integer accepted")
   }
 }
+
+///|
+test "unknown values cannot impersonate standard value tags" {
+  try @lib.encode(packet(@lib.Unknown(0x21, b"\x00\x00\x00\x01"))) catch {
+    _ => ()
+  } noraise {
+    _ => fail("standard tag encoded as unknown")
+  }
+}
+
+///|
+test "byte bounds are enforced inside collections before allocation" {
+  let bytes = @lib.encode(
+    packet(
+      @lib.Collection([
+        @lib.Attribute::new("long", @lib.Text("a long collection value")),
+      ]),
+    ),
+  )
+  let limits = @lib.DecodeLimits::{
+    ..@lib.DecodeLimits::defaults(),
+    max_message_bytes: 30,
+  }
+  try @lib.decode(bytes, limits~) catch {
+    error => assert_true(error is @lib.Limit(_))
+  } noraise {
+    _ => fail("collection byte bound ignored")
+  }
+}

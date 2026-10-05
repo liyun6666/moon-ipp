@@ -2,11 +2,12 @@
 priv struct Reader {
   data : Bytes
   mut offset : Int
+  mut limit : Int
 }
 
 ///|
 fn Reader::new(data : Bytes) -> Reader {
-  { data, offset: 0, }
+  { data, offset: 0, limit: data.length(), }
 }
 
 ///|
@@ -18,6 +19,9 @@ fn Reader::remaining(self : Reader) -> Int {
 fn Reader::require(self : Reader, count : Int) -> Unit raise IppError {
   if count < 0 || count > self.remaining() {
     raise Truncated(self.offset, count)
+  }
+  if count > self.limit - self.offset {
+    raise Limit("message bytes")
   }
 }
 

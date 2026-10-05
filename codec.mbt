@@ -31,6 +31,7 @@ pub fn decode(
     raise Truncated(0, 9)
   }
   let reader = Reader::new(bytes)
+  reader.limit = limits.max_message_bytes
   let version = Version::new(reader.byte(), reader.byte())
   let code = reader.u16()
   let request_id = reader.i32()
@@ -56,6 +57,7 @@ pub fn decode(
       if reader.remaining() > limits.max_document_bytes {
         raise Limit("document bytes")
       }
+      reader.limit = bytes.length()
       let document = reader.bytes(reader.remaining())
       return { version, code, request_id, groups, document, }
     }

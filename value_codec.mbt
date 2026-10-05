@@ -162,7 +162,12 @@ fn encode_scalar(value : IppValue) -> Bytes raise IppError {
     | Charset(s)
     | Language(s)
     | MimeType(s) => output.write_bytes(encode_utf8(s))
-    Octets(bytes) | Unknown(_, bytes) => output.write_bytes(bytes)
+    Octets(bytes) => output.write_bytes(bytes)
+    Unknown(tag, bytes) =>
+      match decode_scalar(tag, bytes) {
+        Unknown(_, _) => output.write_bytes(bytes)
+        _ => raise Invalid("Unknown must use an unrecognized value tag")
+      }
     TextWithLanguage(language, text) | NameWithLanguage(language, text) => {
       put_length_bytes(output, encode_utf8(language))
       put_length_bytes(output, encode_utf8(text))
