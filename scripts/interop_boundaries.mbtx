@@ -51,17 +51,20 @@ async fn main {
     @json.parse(result.stdout(), reject_duplicate_keys=true)
   }
   @async.with_task_group(group => {
-    group.spawn_bg(() => {
-      @shell.Cmd(
-        "ippeveprinter",
-        [
-          "-n", "localhost", "-p", "8632", "-s", "60", "-f", "text/plain", "-d",
-          spool, "-k", "-v", "Moon IPP Boundary Test",
-        ],
-        stdout=@shell.ToFile(output + "/server.log"),
-        stderr=@shell.AppendToFile(output + "/server.log"),
-      ).run()
-    })
+    group.spawn_bg(
+      () => {
+        @shell.Cmd(
+          "ippeveprinter",
+          [
+            "-n", "localhost", "-p", "8632", "-s", "60", "-f", "text/plain", "-d",
+            spool, "-k", "-v", "Moon IPP Boundary Test",
+          ],
+          stdout=@shell.ToFile(output + "/server.log"),
+          stderr=@shell.AppendToFile(output + "/server.log"),
+        ).run()
+      },
+      no_wait=true,
+    )
     let ready = for _ in 0..<50 {
       let result = @shell.Cmd("moon", [
         "run", "cmd/main", "--target", "native", "--", "health", "--uri", uri, "--timeout",
