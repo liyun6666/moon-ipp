@@ -2,6 +2,12 @@
 
 本页记录可复现验证方法；GitHub Actions 保存每次运行的实际结果。
 
+## 0.1.3 实测结果
+
+2026-10-25，[CI 40170010056](https://github.com/liyun6666/moon-ipp/actions/runs/40170010056) 的 Windows/Linux 任务全部成功：wasm-gc 55/55、JS 69/69、native 74/74；Windows C4005 按错误检查，编译兼容探针、构建、脚本格式及 Linux CUPS 全流程均通过。
+
+实际发布返回 HTTP 200；注册表确认 0.1.3、未撤回。独立消费测试 1/1 通过，下载包 37 个 MoonBit 文件及 3 个构建支持文件与发布代码一致。详见 [新版验证记录](0.1.3-验证记录.md)，并保留以下历史证据。
+
 ## 0.1.2 实测结果
 
 2026-10-25，发布代码 `bfdb7c0fc13a39120fc18d0280840fc9d160abce` 的 [CI 40167374982](https://github.com/liyun6666/moon-ipp/actions/runs/40167374982) 两个任务全部成功：Windows/Linux 均为 wasm-gc 55/55、JS 69/69、native 74/74；严格检查、构建、格式通过，Linux 独立 CUPS 及大文档验收通过。本机也已安装 MSVC 并完成 native 验证。
