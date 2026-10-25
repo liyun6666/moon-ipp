@@ -73,7 +73,7 @@ fn same_values(left : Array[IppValue], right : Array[IppValue]) -> Bool {
 pub fn compare_capabilities(
   before : Capabilities,
   after : Capabilities,
-  include_volatile? : Bool = false,
+  include_volatile~ : Bool = false,
 ) -> Array[CapabilityChange] {
   let changes : Array[CapabilityChange] = []
   let seen : Map[String, Bool] = Map([])

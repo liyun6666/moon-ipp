@@ -22,13 +22,13 @@ pub(all) struct Arguments {
   other : String?
   user : String
   options : @moon-ipp.JobOptions
-  job_id : Int?
-  timeout_ms : Int
-  interval_ms : Int
-  polls : Int
+  job_id : Int32?
+  timeout_ms : Int32
+  interval_ms : Int32
+  polls : Int32
   which : String
   mine : Bool
-  limit : Int
+  limit : Int32
   requested : Array[String]
   last_document : Bool
   preflight : Bool

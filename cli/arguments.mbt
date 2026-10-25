@@ -32,13 +32,13 @@ pub(all) struct Arguments {
   other : String?
   user : String
   options : @ipp.JobOptions
-  job_id : Int?
-  timeout_ms : Int
-  interval_ms : Int
-  polls : Int
+  job_id : Int32?
+  timeout_ms : Int32
+  interval_ms : Int32
+  polls : Int32
   which : String
   mine : Bool
-  limit : Int
+  limit : Int32
   requested : Array[String]
   last_document : Bool
   preflight : Bool
@@ -70,7 +70,7 @@ fn command_from_string(text : String) -> Command raise @ipp.IppError {
 }
 
 ///|
-fn decimal(text : String, maximum : Int) -> Int raise @ipp.IppError {
+fn decimal(text : String, maximum : Int32) -> Int32 raise @ipp.IppError {
   if text.is_empty() {
     raise @ipp.Invalid("empty numeric option")
   }
@@ -86,7 +86,7 @@ fn decimal(text : String, maximum : Int) -> Int raise @ipp.IppError {
 }
 
 ///|
-fn positive(text : String, maximum : Int) -> Int raise @ipp.IppError {
+fn positive(text : String, maximum : Int32) -> Int32 raise @ipp.IppError {
   let result = decimal(text, maximum)
   if result == 0 {
     raise @ipp.Invalid("numeric option must be positive")

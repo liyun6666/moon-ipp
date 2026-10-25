@@ -3,7 +3,7 @@ pub(all) enum PrinterState {
   Idle
   Processing
   Stopped
-  Unrecognized(Int)
+  Unrecognized(Int32)
 } derive(Eq, Debug)
 
 ///|
@@ -13,7 +13,7 @@ pub extend PrinterState with Eq::{equal, not_equal}
 pub extend PrinterState with @debug.Debug::{to_repr}
 
 ///|
-pub fn printer_state_from_code(code : Int) -> PrinterState {
+pub fn printer_state_from_code(code : Int32) -> PrinterState {
   match code {
     3 => Idle
     4 => Processing
@@ -37,7 +37,7 @@ pub(all) struct PrinterHealth {
   name : String
   state : PrinterState?
   accepting_jobs : Bool?
-  queued_jobs : Int?
+  queued_jobs : Int32?
   reasons : Array[String]
   diagnostics : Array[Diagnostic]
 } derive(Debug)
@@ -128,15 +128,15 @@ pub fn PrinterHealth::to_json(self : PrinterHealth) -> Json {
 
 ///|
 pub(all) struct QueueSummary {
-  total : Int
-  pending : Int
-  held : Int
-  processing : Int
-  stopped : Int
-  canceled : Int
-  aborted : Int
-  completed : Int
-  unknown : Int
+  total : Int32
+  pending : Int32
+  held : Int32
+  processing : Int32
+  stopped : Int32
+  canceled : Int32
+  aborted : Int32
+  completed : Int32
+  unknown : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -148,7 +148,7 @@ pub extend QueueSummary with @debug.Debug::{to_repr}
 ///|
 /// Summaries reject duplicate IDs instead of double-counting a malformed queue.
 pub fn summarize_queue(jobs : Array[Job]) -> QueueSummary raise IppError {
-  let ids : Map[Int, Bool] = Map([])
+  let ids : Map[Int32, Bool] = Map([])
   let counts = FixedArray::make(8, 0)
   for job in jobs {
     if ids.contains(job.id) {

@@ -1,8 +1,8 @@
 ///|
-extern "C" fn exit_process(code : Int) -> Unit = "exit"
+extern "C" fn exit_process(code : Int32) -> Unit = "exit"
 
 ///|
-async fn read_bytes(path : String, maximum : Int) -> Bytes {
+async fn read_bytes(path : String, maximum : Int32) -> Bytes {
   let file = @fs.open(path, mode=@fs.ReadOnly)
   defer file.close()
   if file.size() > maximum.to_int64() {
@@ -52,7 +52,7 @@ fn required_path(value : String?) -> String raise @ipp.IppError {
 }
 
 ///|
-fn required_id(value : Int?) -> Int raise @ipp.IppError {
+fn required_id(value : Int32?) -> Int32 raise @ipp.IppError {
   match value {
     Some(id) => id
     None => raise @ipp.Invalid("missing required job ID")

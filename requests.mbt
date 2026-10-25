@@ -15,8 +15,8 @@ pub extend RequestContext with @debug.Debug::{to_repr}
 ///|
 pub fn RequestContext::new(
   uri : String,
-  user? : String = "anonymous",
-  language? : String = "en",
+  user~ : String = "anonymous",
+  language~ : String = "en",
 ) -> RequestContext raise IppError {
   if encode_utf8(user).length() < 1 || encode_utf8(user).length() > 255 {
     raise Invalid("requesting user name length out of range")
@@ -42,7 +42,7 @@ fn RequestContext::attributes(self : RequestContext) -> Array[Attribute] {
 fn RequestContext::request(
   self : RequestContext,
   operation : Operation,
-  request_id : Int,
+  request_id : Int32,
   attributes : Array[Attribute],
 ) -> Message raise IppError {
   if request_id < 1 {
@@ -60,8 +60,8 @@ fn RequestContext::request(
 ///|
 pub fn RequestContext::printer_attributes(
   self : RequestContext,
-  request_id : Int,
-  requested? : Array[String] = [],
+  request_id : Int32,
+  requested~ : Array[String] = [],
 ) -> Message raise IppError {
   let attributes = self.attributes()
   if !requested.is_empty() {
@@ -73,10 +73,10 @@ pub fn RequestContext::printer_attributes(
 ///|
 pub fn RequestContext::get_jobs(
   self : RequestContext,
-  request_id : Int,
-  which? : String = "not-completed",
-  mine? : Bool = false,
-  limit? : Int = 100,
+  request_id : Int32,
+  which~ : String = "not-completed",
+  mine~ : Bool = false,
+  limit~ : Int32 = 100,
 ) -> Message raise IppError {
   if which != "not-completed" && which != "completed" && which != "all" {
     raise Invalid("which-jobs must be all, completed or not-completed")
@@ -101,8 +101,8 @@ pub fn RequestContext::get_jobs(
 fn RequestContext::job_request(
   self : RequestContext,
   operation : Operation,
-  request_id : Int,
-  job_id : Int,
+  request_id : Int32,
+  job_id : Int32,
 ) -> Message raise IppError {
   if job_id < 1 {
     raise Invalid("job-id must be positive")
@@ -116,8 +116,8 @@ fn RequestContext::job_request(
 ///|
 pub fn RequestContext::job_attributes(
   self : RequestContext,
-  request_id : Int,
-  job_id : Int,
+  request_id : Int32,
+  job_id : Int32,
 ) -> Message raise IppError {
   self.job_request(GetJobAttributes, request_id, job_id)
 }
@@ -125,8 +125,8 @@ pub fn RequestContext::job_attributes(
 ///|
 pub fn RequestContext::cancel_job(
   self : RequestContext,
-  request_id : Int,
-  job_id : Int,
+  request_id : Int32,
+  job_id : Int32,
 ) -> Message raise IppError {
   self.job_request(CancelJob, request_id, job_id)
 }
@@ -134,7 +134,7 @@ pub fn RequestContext::cancel_job(
 ///|
 pub fn RequestContext::validate_job(
   self : RequestContext,
-  request_id : Int,
+  request_id : Int32,
   options : JobOptions,
 ) -> Message raise IppError {
   options.validate()
@@ -152,7 +152,7 @@ pub fn RequestContext::validate_job(
 ///|
 pub fn RequestContext::print_job(
   self : RequestContext,
-  request_id : Int,
+  request_id : Int32,
   options : JobOptions,
   document : Bytes,
 ) -> Message raise IppError {
@@ -166,7 +166,7 @@ pub fn RequestContext::print_job(
 ///|
 pub fn RequestContext::create_job(
   self : RequestContext,
-  request_id : Int,
+  request_id : Int32,
   options : JobOptions,
 ) -> Message raise IppError {
   options.validate()
@@ -181,11 +181,11 @@ pub fn RequestContext::create_job(
 ///|
 pub fn RequestContext::send_document(
   self : RequestContext,
-  request_id : Int,
-  job_id : Int,
+  request_id : Int32,
+  job_id : Int32,
   format : String,
   document : Bytes,
-  last? : Bool = true,
+  last~ : Bool = true,
 ) -> Message raise IppError {
   if !valid_mime_type(format) || document.is_empty() {
     raise Invalid("invalid document format or empty document")

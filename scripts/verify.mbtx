@@ -1,38 +1,52 @@
+----
 import {
-  "moonbitlang/async",
-  "moonbitlang/async/shell",
-  "moonbitlang/async/fs",
+  "moonbitlang/async@0.22.5",
+  "moonbitlang/async@0.22.5/shell",
+  "moonbitlang/async@0.22.5/fs",
   "moonbitlang/core/env",
 }
+----
 
 ///|
 async fn native_environment() -> Map[String, String] {
   let environment : Map[String, String] = Map([])
-  if @env.get_env_var("OS") != Some("Windows_NT") { return environment }
-  let program_files = @env.get_env_var("ProgramFiles(x86)").unwrap_or("C:\\Program Files (x86)")
-  let discovery = @shell.Cmd(program_files + "\\Microsoft Visual Studio\\Installer\\vswhere.exe", [
-    "-latest", "-products", "*", "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-    "-property", "installationPath",
-  ]).output()
+  if @env.get_env_var("OS") != Some("Windows_NT") {
+    return environment
+  }
+  let program_files = @env.get_env_var("ProgramFiles(x86)").unwrap_or(
+    "C:\\Program Files (x86)",
+  )
+  let discovery = @shell.Cmd(
+    program_files + "\\Microsoft Visual Studio\\Installer\\vswhere.exe",
+    [
+      "-latest", "-products", "*", "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+      "-property", "installationPath",
+    ],
+  ).output()
   if discovery.exit_code() != 0 {
     fail("MSVC discovery failed: " + discovery.stderr())
   }
   let root = discovery.stdout().trim().to_owned()
-  if root.is_empty() { fail("Install MSVC C++ Build Tools before native verification") }
+  if root.is_empty() {
+    fail("Install MSVC C++ Build Tools before native verification")
+  }
   // cmd is required only to initialize Microsoft's developer environment.
   // Its captured environment is kept in memory and never printed.
   // The temporary file only bridges cmd's batch-file quoting rules. Discovery,
   // parsing, validation and all process orchestration remain in this script.
   @fs.mkdir("_build", allow_exist=true)
-  @fs.write_file("_build/msvc-environment.cmd",
-    "@chcp 65001 >nul\r\n@call \"\{root}\\Common7\\Tools\\VsDevCmd.bat\" -arch=x64 -host_arch=x64 >nul\r\n@echo __MOON_MSVC_EXIT__=%errorlevel%\r\n@set\r\n")
+  @fs.write_file(
+    "_build/msvc-environment.cmd",
+    "@chcp 65001 >nul\r\n@call \"\{root}\\Common7\\Tools\\VsDevCmd.bat\" -arch=x64 -host_arch=x64 >nul\r\n@echo __MOON_MSVC_EXIT__=%errorlevel%\r\n@set\r\n",
+  )
   let setup = @shell.Cmd("cmd.exe", ["/d", "/c", "_build\\msvc-environment.cmd"]).output()
   if setup.exit_code() != 0 {
     fail("MSVC environment setup failed: " + setup.stderr())
   }
   for line in setup.stdout().split("\n") {
     match line.trim().split_once("=") {
-      Some((name, value)) if !name.is_empty() => environment[name.to_owned()] = value.to_owned()
+      Some((name, value)) if !name.is_empty() =>
+        environment[name.to_owned()] = value.to_owned()
       _ => ()
     }
   }
@@ -51,21 +65,30 @@ async fn main {
   let arguments = @env.args()
   if arguments.length() > 1 && arguments[1] == "--run" {
     let command = ["run", "cmd/main", "--target", "native", "--"]
-    for argument in arguments[2:] { command.push(argument) }
+    for argument in arguments[2:] {
+      command.push(argument)
+    }
     @shell.Cmd("moon", command, env=environment).run()
     return
   }
   let native_only = arguments.contains("--native-only")
   let commands = if native_only {
-    [["check", "--deny-warn"], ["test", "--deny-warn"], ["build", "--deny-warn"]]
+    [
+      ["check", "--deny-warn"],
+      ["test", "--deny-warn"],
+      ["build", "--deny-warn"],
+    ]
   } else {
     [
       ["check", "--target", "wasm-gc", "--deny-warn"],
       ["test", "--target", "wasm-gc", "--deny-warn"],
       ["check", "--target", "js", "--deny-warn"],
       ["test", "--target", "js", "--deny-warn"],
-      ["check", "--deny-warn"], ["test", "--deny-warn"], ["build", "--deny-warn"],
+      ["check", "--deny-warn"],
+      ["test", "--deny-warn"],
+      ["build", "--deny-warn"],
       ["fmt", "--check"],
+      ["fmt", "scripts/verify.mbtx", "--check"],
     ]
   }
   for command in commands {

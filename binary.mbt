@@ -1,8 +1,8 @@
 ///|
 priv struct Reader {
   data : Bytes
-  mut offset : Int
-  mut limit : Int
+  mut offset : Int32
+  mut limit : Int32
 }
 
 ///|
@@ -11,12 +11,12 @@ fn Reader::new(data : Bytes) -> Reader {
 }
 
 ///|
-fn Reader::remaining(self : Reader) -> Int {
+fn Reader::remaining(self : Reader) -> Int32 {
   self.data.length() - self.offset
 }
 
 ///|
-fn Reader::require(self : Reader, count : Int) -> Unit raise IppError {
+fn Reader::require(self : Reader, count : Int32) -> Unit raise IppError {
   if count < 0 || count > self.remaining() {
     raise Truncated(self.offset, count)
   }
@@ -26,7 +26,7 @@ fn Reader::require(self : Reader, count : Int) -> Unit raise IppError {
 }
 
 ///|
-fn Reader::byte(self : Reader) -> Int raise IppError {
+fn Reader::byte(self : Reader) -> Int32 raise IppError {
   self.require(1)
   let value = self.data[self.offset].to_int()
   self.offset += 1
@@ -34,14 +34,14 @@ fn Reader::byte(self : Reader) -> Int raise IppError {
 }
 
 ///|
-fn Reader::u16(self : Reader) -> Int raise IppError {
+fn Reader::u16(self : Reader) -> Int32 raise IppError {
   let high = self.byte()
   let low = self.byte()
   (high << 8) | low
 }
 
 ///|
-fn Reader::i32(self : Reader) -> Int raise IppError {
+fn Reader::i32(self : Reader) -> Int32 raise IppError {
   let a = self.byte()
   let b = self.byte()
   let c = self.byte()
@@ -50,7 +50,7 @@ fn Reader::i32(self : Reader) -> Int raise IppError {
 }
 
 ///|
-fn Reader::bytes(self : Reader, count : Int) -> Bytes raise IppError {
+fn Reader::bytes(self : Reader, count : Int32) -> Bytes raise IppError {
   self.require(count)
   let bytes = self.data
     .exact_view(start=self.offset, end=self.offset + count)
@@ -66,7 +66,7 @@ fn Reader::length_bytes(self : Reader) -> Bytes raise IppError {
 }
 
 ///|
-fn put_byte(output : @buffer.Buffer, value : Int) -> Unit raise IppError {
+fn put_byte(output : @buffer.Buffer, value : Int32) -> Unit raise IppError {
   if value < 0 || value > 255 {
     raise Invalid("byte out of range")
   }
@@ -74,7 +74,7 @@ fn put_byte(output : @buffer.Buffer, value : Int) -> Unit raise IppError {
 }
 
 ///|
-fn put_u16(output : @buffer.Buffer, value : Int) -> Unit raise IppError {
+fn put_u16(output : @buffer.Buffer, value : Int32) -> Unit raise IppError {
   if value < 0 || value > 65535 {
     raise Invalid("16-bit value out of range")
   }
@@ -83,7 +83,7 @@ fn put_u16(output : @buffer.Buffer, value : Int) -> Unit raise IppError {
 }
 
 ///|
-fn put_i32(output : @buffer.Buffer, value : Int) -> Unit raise IppError {
+fn put_i32(output : @buffer.Buffer, value : Int32) -> Unit raise IppError {
   put_byte(output, (value >> 24) & 255)
   put_byte(output, (value >> 16) & 255)
   put_byte(output, (value >> 8) & 255)
@@ -124,7 +124,7 @@ pub fn bytes_to_hex(bytes : Bytes) -> String {
 }
 
 ///|
-fn hex_nibble(char : UInt16) -> Int? {
+fn hex_nibble(char : UInt16) -> Int32? {
   let n = char.to_int()
   if n >= 48 && n <= 57 {
     Some(n - 48)

@@ -1,12 +1,12 @@
 ///|
 pub(all) struct Resolution {
-  x : Int
-  y : Int
-  units : Int
+  x : Int32
+  y : Int32
+  units : Int32
 } derive(Eq, Debug)
 
 ///|
-pub fn Resolution::dpi(x : Int, y : Int) -> Resolution raise IppError {
+pub fn Resolution::dpi(x : Int32, y : Int32) -> Resolution raise IppError {
   if x < 1 || y < 1 {
     raise Invalid("resolution must be positive")
   }
@@ -15,16 +15,16 @@ pub fn Resolution::dpi(x : Int, y : Int) -> Resolution raise IppError {
 
 ///|
 pub(all) struct IppDateTime {
-  year : Int
-  month : Int
-  day : Int
-  hour : Int
-  minute : Int
-  second : Int
-  decisecond : Int
-  utc_direction : Int
-  utc_hours : Int
-  utc_minutes : Int
+  year : Int32
+  month : Int32
+  day : Int32
+  hour : Int32
+  minute : Int32
+  second : Int32
+  decisecond : Int32
+  utc_direction : Int32
+  utc_hours : Int32
+  utc_minutes : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -70,10 +70,10 @@ pub fn IppDateTime::validate(self : IppDateTime) -> Unit raise IppError {
 
 ///|
 pub(all) enum IppValue {
-  Integer(Int)
-  Enumeration(Int)
+  Integer(Int32)
+  Enumeration(Int32)
   Boolean(Bool)
-  Range(Int, Int)
+  Range(Int32, Int32)
   ResolutionValue(Resolution)
   DateTime(IppDateTime)
   Text(String)
@@ -88,8 +88,8 @@ pub(all) enum IppValue {
   TextWithLanguage(String, String)
   NameWithLanguage(String, String)
   Collection(Array[Attribute])
-  OutOfBand(Int)
-  Unknown(Int, Bytes)
+  OutOfBand(Int32)
+  Unknown(Int32, Bytes)
 } derive(Eq, Debug)
 
 ///|
@@ -104,7 +104,7 @@ pub fn Attribute::new(name : String, value : IppValue) -> Attribute {
 }
 
 ///|
-pub fn Attribute::integers(name : String, values : Array[Int]) -> Attribute {
+pub fn Attribute::integers(name : String, values : Array[Int32]) -> Attribute {
   { name, values: values.map(fn(n) { IppValue::Integer(n) }), }
 }
 
@@ -140,7 +140,7 @@ pub fn IppValue::as_string(self : IppValue) -> String? {
 }
 
 ///|
-pub fn IppValue::as_int(self : IppValue) -> Int? {
+pub fn IppValue::as_int(self : IppValue) -> Int32? {
   match self {
     Integer(n) | Enumeration(n) => Some(n)
     _ => None
@@ -156,7 +156,7 @@ pub fn IppValue::as_bool(self : IppValue) -> Bool? {
 }
 
 ///|
-pub fn IppValue::tag(self : IppValue) -> Int {
+pub fn IppValue::tag(self : IppValue) -> Int32 {
   match self {
     Integer(_) => 0x21
     Boolean(_) => 0x22
@@ -182,7 +182,7 @@ pub fn IppValue::tag(self : IppValue) -> Int {
 
 ///|
 pub(all) struct Group {
-  tag : Int
+  tag : Int32
   attributes : Array[Attribute]
 } derive(Eq, Debug)
 
@@ -224,7 +224,7 @@ pub fn Group::get_string(self : Group, name : String) -> String? {
 }
 
 ///|
-pub fn Group::get_int(self : Group, name : String) -> Int? {
+pub fn Group::get_int(self : Group, name : String) -> Int32? {
   match self.find(name) {
     Some(attribute) =>
       match attribute.first() {
@@ -250,23 +250,23 @@ pub fn Group::get_bool(self : Group, name : String) -> Bool? {
 ///|
 pub(all) struct Message {
   version : Version
-  code : Int
-  request_id : Int
+  code : Int32
+  request_id : Int32
   groups : Array[Group]
   document : Bytes
 } derive(Eq, Debug)
 
 ///|
 pub fn Message::new(
-  code : Int,
-  request_id : Int,
+  code : Int32,
+  request_id : Int32,
   groups : Array[Group],
 ) -> Message {
   { version: Version::v20(), code, request_id, groups, document: b"", }
 }
 
 ///|
-pub fn Message::find_group(self : Message, tag : Int) -> Group? {
+pub fn Message::find_group(self : Message, tag : Int32) -> Group? {
   for group in self.groups {
     if group.tag == tag {
       return Some(group)
@@ -276,7 +276,7 @@ pub fn Message::find_group(self : Message, tag : Int) -> Group? {
 }
 
 ///|
-pub fn Message::find(self : Message, tag : Int, name : String) -> Attribute? {
+pub fn Message::find(self : Message, tag : Int32, name : String) -> Attribute? {
   match self.find_group(tag) {
     Some(group) => group.find(name)
     None => None

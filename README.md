@@ -8,7 +8,7 @@ MoonBit 原生 IPP 网络打印协议库和客户端。业务系统可以查询�
 
 ## 安装
 
-需要 MoonBit stable 2026-09-18 或更新的兼容版本。网络客户端依赖 `moonbitlang/async@0.22.4`；native 构建需要 C 编译器，Windows 异步库要求 MSVC。Linux CI 验证 native，JS 客户端通过 Node.js 测试。
+需要 MoonBit stable 2026-10-23 或更新的兼容版本。网络客户端依赖 `moonbitlang/async@0.22.5`；native 构建需要 C 编译器，Windows 异步库要求 MSVC。Windows/Linux CI 验证 native，JS 客户端通过 Node.js 测试。
 
 ```sh
 moon add liyun6666/moon-ipp@0.1.2

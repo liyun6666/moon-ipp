@@ -4,6 +4,7 @@ import {
   "moonbitlang/async",
   "moonbitlang/async/http",
   "moonbitlang/async/socket",
+  "moonbitlang/async/io",
 } for "test"
 
 supported_targets = "native"

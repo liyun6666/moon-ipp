@@ -32,8 +32,8 @@ pub fn sides_from_string(text : String) -> Sides raise IppError {
 
 ///|
 pub(all) struct PageRange {
-  first : Int
-  last : Int
+  first : Int32
+  last : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -43,7 +43,7 @@ pub extend PageRange with Eq::{equal, not_equal}
 pub extend PageRange with @debug.Debug::{to_repr}
 
 ///|
-pub fn PageRange::new(first : Int, last : Int) -> PageRange raise IppError {
+pub fn PageRange::new(first : Int32, last : Int32) -> PageRange raise IppError {
   if first < 1 || last < first {
     raise Invalid("invalid page range")
   }
@@ -54,14 +54,14 @@ pub fn PageRange::new(first : Int, last : Int) -> PageRange raise IppError {
 pub(all) struct JobOptions {
   name : String
   document_format : String
-  copies : Int
+  copies : Int32
   media : String?
   sides : Sides?
   color_mode : String?
   resolution : Resolution?
-  print_quality : Int?
-  orientation : Int?
-  number_up : Int?
+  print_quality : Int32?
+  orientation : Int32?
+  number_up : Int32?
   page_ranges : Array[PageRange]
 } derive(Eq, Debug)
 

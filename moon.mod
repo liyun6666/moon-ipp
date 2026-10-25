@@ -26,5 +26,5 @@ preferred_target = "native"
 description = "MoonBit-native IPP codec, capability validation and network printing client"
 
 import {
-  "moonbitlang/async@0.22.4",
+  "moonbitlang/async@0.22.5",
 }

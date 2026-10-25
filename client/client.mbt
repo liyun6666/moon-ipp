@@ -2,9 +2,9 @@
 pub struct Client {
   context : @ipp.RequestContext
   transport : &Transport
-  timeout_ms : Int
+  timeout_ms : Int32
   limits : @ipp.DecodeLimits
-  mut next_id : Int
+  mut next_id : Int32
   mut busy : Bool
 }
 
@@ -12,9 +12,9 @@ pub struct Client {
 pub fn Client::new(
   uri : String,
   transport : &Transport,
-  user? : String = "anonymous",
-  timeout_ms? : Int = 10000,
-  limits? : @ipp.DecodeLimits = @ipp.DecodeLimits::defaults(),
+  user~ : String = "anonymous",
+  timeout_ms~ : Int32 = 10000,
+  limits~ : @ipp.DecodeLimits = @ipp.DecodeLimits::defaults(),
 ) -> Client raise @ipp.IppError {
   if timeout_ms < 1 || timeout_ms > 300000 {
     raise @ipp.Invalid("timeout must be between 1 and 300000 ms")
@@ -31,7 +31,7 @@ pub fn Client::new(
 }
 
 ///|
-fn Client::request_id(self : Client) -> Int {
+fn Client::request_id(self : Client) -> Int32 {
   let current = self.next_id
   self.next_id = if current == 2147483647 { 1 } else { current + 1 }
   current
@@ -99,7 +99,7 @@ pub async fn Client::exchange(
 ///|
 pub async fn Client::printer_attributes(
   self : Client,
-  requested? : Array[String] = [],
+  requested~ : Array[String] = [],
 ) -> @ipp.Message {
   self.exchange(self.context.printer_attributes(self.request_id(), requested~))
 }
@@ -122,7 +122,7 @@ pub async fn Client::print_job(
   self : Client,
   options : @ipp.JobOptions,
   document : Bytes,
-  preflight? : Bool = true,
+  preflight~ : Bool = true,
 ) -> @ipp.Job {
   if document.length() > self.limits.max_document_bytes {
     raise @ipp.Limit("document bytes")
@@ -156,10 +156,10 @@ pub async fn Client::create_job(
 ///|
 pub async fn Client::send_document(
   self : Client,
-  job_id : Int,
+  job_id : Int32,
   format : String,
   document : Bytes,
-  last? : Bool = true,
+  last~ : Bool = true,
 ) -> @ipp.Message {
   self.exchange(
     self.context.send_document(
@@ -173,7 +173,7 @@ pub async fn Client::send_document(
 }
 
 ///|
-pub async fn Client::job(self : Client, job_id : Int) -> @ipp.Job {
+pub async fn Client::job(self : Client, job_id : Int32) -> @ipp.Job {
   let job = @ipp.job_from_response(
     self.exchange(self.context.job_attributes(self.request_id(), job_id)),
   )
@@ -199,9 +199,9 @@ fn accepted_job(response : @ipp.Message) -> @ipp.Job raise {
 ///|
 pub async fn Client::jobs(
   self : Client,
-  which? : String = "not-completed",
-  mine? : Bool = false,
-  limit? : Int = 100,
+  which~ : String = "not-completed",
+  mine~ : Bool = false,
+  limit~ : Int32 = 100,
 ) -> Array[@ipp.Job] {
   @ipp.jobs_from_response(
     self.exchange(
@@ -211,15 +211,15 @@ pub async fn Client::jobs(
 }
 
 ///|
-pub async fn Client::cancel_job(self : Client, job_id : Int) -> @ipp.Message {
+pub async fn Client::cancel_job(self : Client, job_id : Int32) -> @ipp.Message {
   self.exchange(self.context.cancel_job(self.request_id(), job_id))
 }
 
 ///|
 pub async fn Client::wait_job(
   self : Client,
-  job_id : Int,
-  policy? : @ipp.PollPolicy = @ipp.PollPolicy::defaults(),
+  job_id : Int32,
+  policy~ : @ipp.PollPolicy = @ipp.PollPolicy::defaults(),
 ) -> Array[@ipp.JobObservation] {
   policy.validate()
   let observations : Array[@ipp.JobObservation] = []

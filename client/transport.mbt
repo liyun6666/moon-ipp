@@ -1,11 +1,11 @@
 ///|
 pub(all) suberror ClientError {
-  HttpStatus(Int)
+  HttpStatus(Int32)
   UnexpectedContentType(String)
   ResponseTooLarge
   ConcurrentRequest
   SubmissionUncertain(String)
-  JobWaitExpired(Int)
+  JobWaitExpired(Int32)
 } derive(@debug.Debug)
 
 ///|
@@ -13,7 +13,7 @@ pub extend ClientError with @debug.Debug::{to_repr}
 
 ///|
 pub trait Transport {
-  async fn exchange(Self, @ipp.PrinterUri, Bytes, Int) -> Bytes
+  async fn exchange(Self, @ipp.PrinterUri, Bytes, Int32) -> Bytes
 }
 
 ///|

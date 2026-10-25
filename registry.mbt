@@ -17,7 +17,7 @@ pub extend Operation with Eq::{equal, not_equal}
 pub extend Operation with @debug.Debug::{to_repr}
 
 ///|
-pub fn Operation::code(self : Operation) -> Int {
+pub fn Operation::code(self : Operation) -> Int32 {
   match self {
     PrintJob => 0x0002
     ValidateJob => 0x0004
@@ -45,7 +45,7 @@ pub fn Operation::name(self : Operation) -> String {
 }
 
 ///|
-pub fn operation_from_code(code : Int) -> Operation? {
+pub fn operation_from_code(code : Int32) -> Operation? {
   match code {
     2 => Some(PrintJob)
     4 => Some(ValidateJob)
@@ -60,7 +60,7 @@ pub fn operation_from_code(code : Int) -> Operation? {
 }
 
 ///|
-pub fn status_name(code : Int) -> String {
+pub fn status_name(code : Int32) -> String {
   match code {
     0x0000 => "successful-ok"
     0x0001 => "successful-ok-ignored-or-substituted-attributes"
@@ -99,7 +99,7 @@ pub fn status_name(code : Int) -> String {
 }
 
 ///|
-pub fn group_name(tag : Int) -> String {
+pub fn group_name(tag : Int32) -> String {
   match tag {
     1 => "operation-attributes"
     2 => "job-attributes"
@@ -115,7 +115,7 @@ pub fn group_name(tag : Int) -> String {
 }
 
 ///|
-pub fn value_tag_name(tag : Int) -> String {
+pub fn value_tag_name(tag : Int32) -> String {
   match tag {
     0x10 => "unsupported"
     0x12 => "unknown"

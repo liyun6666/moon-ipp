@@ -1,5 +1,5 @@
 ///|
-fn validate_string_value(tag : Int, text : String) -> Unit raise IppError {
+fn validate_string_value(tag : Int32, text : String) -> Unit raise IppError {
   let maximum = match tag {
     0x41 | 0x45 => 1023
     0x46 | 0x47 | 0x48 => 63
@@ -25,14 +25,14 @@ fn validate_string_value(tag : Int, text : String) -> Unit raise IppError {
 }
 
 ///|
-fn decode_string_value(tag : Int, bytes : Bytes) -> String raise IppError {
+fn decode_string_value(tag : Int32, bytes : Bytes) -> String raise IppError {
   let text = decode_utf8(bytes)
   validate_string_value(tag, text)
   text
 }
 
 ///|
-fn require_length(bytes : Bytes, expected : Int) -> Unit raise IppError {
+fn require_length(bytes : Bytes, expected : Int32) -> Unit raise IppError {
   if bytes.length() != expected {
     raise Invalid("value length \{bytes.length()}, expected \{expected}")
   }
@@ -50,7 +50,7 @@ fn decode_localized(bytes : Bytes) -> (String, String) raise IppError {
 }
 
 ///|
-fn decode_scalar(tag : Int, bytes : Bytes) -> IppValue raise IppError {
+fn decode_scalar(tag : Int32, bytes : Bytes) -> IppValue raise IppError {
   let reader = Reader::new(bytes)
   match tag {
     0x21 => {
@@ -240,7 +240,7 @@ fn encode_scalar(value : IppValue) -> Bytes raise IppError {
 ///|
 fn write_entry(
   output : @buffer.Buffer,
-  tag : Int,
+  tag : Int32,
   name : String,
   bytes : Bytes,
 ) -> Unit raise IppError {
@@ -255,8 +255,8 @@ fn write_entry(
 ///|
 priv struct DecodeBudget {
   limits : DecodeLimits
-  mut attributes : Int
-  mut values : Int
+  mut attributes : Int32
+  mut values : Int32
 }
 
 ///|
@@ -279,7 +279,7 @@ fn DecodeBudget::value(self : DecodeBudget) -> Unit raise IppError {
 fn decode_collection(
   reader : Reader,
   budget : DecodeBudget,
-  depth : Int,
+  depth : Int32,
 ) -> Array[Attribute] raise IppError {
   if depth > budget.limits.max_collection_depth {
     raise Limit("collection nesting")
@@ -348,7 +348,7 @@ fn encode_collection(
   output : @buffer.Buffer,
   members : Array[Attribute],
   budget : DecodeBudget,
-  depth : Int,
+  depth : Int32,
 ) -> Unit raise IppError {
   if depth > budget.limits.max_collection_depth {
     raise Limit("collection nesting")

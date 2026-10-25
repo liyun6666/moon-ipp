@@ -7,7 +7,7 @@ pub(all) enum JobState {
   Canceled
   Aborted
   Completed
-  Other(Int)
+  Other(Int32)
 } derive(Eq, Debug)
 
 ///|
@@ -17,7 +17,7 @@ pub extend JobState with Eq::{equal, not_equal}
 pub extend JobState with @debug.Debug::{to_repr}
 
 ///|
-pub fn job_state_from_code(code : Int) -> JobState {
+pub fn job_state_from_code(code : Int32) -> JobState {
   match code {
     3 => Pending
     4 => PendingHeld
@@ -31,7 +31,7 @@ pub fn job_state_from_code(code : Int) -> JobState {
 }
 
 ///|
-pub fn JobState::code(self : JobState) -> Int {
+pub fn JobState::code(self : JobState) -> Int32 {
   match self {
     Pending => 3
     PendingHeld => 4
@@ -65,13 +65,13 @@ pub fn JobState::terminal(self : JobState) -> Bool {
 
 ///|
 pub(all) struct Job {
-  id : Int
+  id : Int32
   uri : String?
   name : String?
   state : JobState?
   reasons : Array[String]
   message : String?
-  impressions_completed : Int?
+  impressions_completed : Int32?
   attributes : Group
 } derive(Eq, Debug)
 
@@ -140,7 +140,7 @@ pub fn Job::from_group(group : Group) -> Job raise IppError {
 fn job_optional_string(
   group : Group,
   name : String,
-  tag : Int,
+  tag : Int32,
 ) -> String? raise IppError {
   match group.find(name) {
     None => None
@@ -160,7 +160,7 @@ pub fn jobs_from_response(response : Message) -> Array[Job] raise IppError {
     raise Protocol(status_name(response.code))
   }
   let jobs : Array[Job] = []
-  let seen : Map[Int, Bool] = Map([])
+  let seen : Map[Int32, Bool] = Map([])
   for group in response.groups {
     if group.tag == 2 {
       let job = Job::from_group(group)
@@ -188,7 +188,7 @@ pub(all) enum SubmissionState {
   NotSent
   Sending
   OutcomeUnknown
-  Rejected(Int, String)
+  Rejected(Int32, String)
   Accepted(Job)
 } derive(Eq, Debug)
 
@@ -209,7 +209,7 @@ pub fn SubmissionState::may_submit_again(self : SubmissionState) -> Bool {
 ///|
 pub(all) struct JobObservation {
   job : Job
-  elapsed_ms : Int
+  elapsed_ms : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -220,8 +220,8 @@ pub extend JobObservation with @debug.Debug::{to_repr}
 
 ///|
 pub(all) struct PollPolicy {
-  interval_ms : Int
-  maximum_polls : Int
+  interval_ms : Int32
+  maximum_polls : Int32
 } derive(Eq, Debug)
 
 ///|

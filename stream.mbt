@@ -10,7 +10,7 @@ pub struct MessageCollector {
 
 ///|
 pub fn MessageCollector::new(
-  limits? : DecodeLimits = DecodeLimits::defaults(),
+  limits~ : DecodeLimits = DecodeLimits::defaults(),
 ) -> MessageCollector raise IppError {
   limits.validate()
   if limits.max_message_bytes > 2147483647 - limits.max_document_bytes {
@@ -35,7 +35,7 @@ pub fn MessageCollector::feed(
 }
 
 ///|
-pub fn MessageCollector::length(self : MessageCollector) -> Int {
+pub fn MessageCollector::length(self : MessageCollector) -> Int32 {
   self.buffer.length()
 }
 
@@ -56,8 +56,8 @@ pub fn MessageCollector::finish(
 /// document bytes. The output limit prevents an accidental multi-megabyte log.
 pub fn hex_dump(
   bytes : Bytes,
-  maximum? : Int = 1024,
-  width? : Int = 16,
+  maximum~ : Int32 = 1024,
+  width~ : Int32 = 16,
 ) -> String raise IppError {
   if maximum < 0 || maximum > 1048576 || width < 1 || width > 64 {
     raise Invalid("invalid hex dump limits")

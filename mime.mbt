@@ -7,7 +7,7 @@ fn mime_token_character(char : UInt16) -> Bool {
 }
 
 ///|
-fn mime_token_end(text : String, start : Int) -> Int {
+fn mime_token_end(text : String, start : Int32) -> Int32 {
   for end = start
       end < text.length() && mime_token_character(text[end])
       end = end + 1 {
@@ -18,7 +18,7 @@ fn mime_token_end(text : String, start : Int) -> Int {
 }
 
 ///|
-fn skip_mime_space(text : String, start : Int) -> Int {
+fn skip_mime_space(text : String, start : Int32) -> Int32 {
   for end = start
       end < text.length() && (text[end] == ' ' || text[end] == '\t')
       end = end + 1 {

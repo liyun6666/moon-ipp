@@ -64,7 +64,10 @@ pub fn Capabilities::strings(
 }
 
 ///|
-pub fn Capabilities::integers(self : Capabilities, name : String) -> Array[Int] {
+pub fn Capabilities::integers(
+  self : Capabilities,
+  name : String,
+) -> Array[Int32] {
   match self.printer.find(name) {
     Some(attribute) => attribute.values.filter_map(fn(value) { value.as_int() })
     None => []
@@ -169,7 +172,7 @@ fn Capabilities::check_integer(
   diagnostics : Array[Diagnostic],
   supported_name : String,
   request_name : String,
-  requested : Int,
+  requested : Int32,
 ) -> Unit {
   match self.printer.find(supported_name) {
     None =>
@@ -201,7 +204,7 @@ fn Capabilities::check_integer(
 pub fn Capabilities::validate_options(
   self : Capabilities,
   options : JobOptions,
-  document_bytes? : Int = 0,
+  document_bytes~ : Int32 = 0,
 ) -> Array[Diagnostic] raise IppError {
   options.validate()
   validate_attribute_set(self.printer.attributes)
@@ -322,7 +325,7 @@ pub fn diagnostics_have_errors(diagnostics : Array[Diagnostic]) -> Bool {
 pub fn Capabilities::require_options(
   self : Capabilities,
   options : JobOptions,
-  document_bytes? : Int = 0,
+  document_bytes~ : Int32 = 0,
 ) -> Unit raise IppError {
   let errors = self
     .validate_options(options, document_bytes~)

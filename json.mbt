@@ -1,5 +1,5 @@
 ///|
-fn json_int(value : Int) -> Json {
+fn json_int(value : Int32) -> Json {
   Json::number(value.to_double())
 }
 
@@ -16,7 +16,7 @@ fn json_field(json : Json, field : String) -> Json raise IppError {
 }
 
 ///|
-fn json_as_int(json : Json) -> Int raise IppError {
+fn json_as_int(json : Json) -> Int32 raise IppError {
   match json {
     Number(number, ..) => {
       if number < -2147483648.0 ||
@@ -47,7 +47,7 @@ fn json_as_array(json : Json) -> Array[Json] raise IppError {
 }
 
 ///|
-fn json_get_int(json : Json, field : String) -> Int raise IppError {
+fn json_get_int(json : Json, field : String) -> Int32 raise IppError {
   json_as_int(json_field(json, field))
 }
 
@@ -154,7 +154,7 @@ fn bounded_json_octets(
 fn value_from_json(
   json : Json,
   budget : DecodeBudget,
-  depth : Int,
+  depth : Int32,
 ) -> IppValue raise IppError {
   budget.value()
   let tag = json_get_int(json, "tag")
@@ -258,7 +258,7 @@ fn value_from_json(
 fn attribute_from_json(
   json : Json,
   budget : DecodeBudget,
-  depth : Int,
+  depth : Int32,
 ) -> Attribute raise IppError {
   budget.attribute()
   let name = json_get_string(json, "name")
@@ -279,7 +279,7 @@ fn attribute_from_json(
 ///|
 pub fn message_from_json(
   json : Json,
-  limits? : DecodeLimits = DecodeLimits::defaults(),
+  limits~ : DecodeLimits = DecodeLimits::defaults(),
 ) -> Message raise IppError {
   limits.validate()
   let budget : DecodeBudget = { limits, attributes: 0, values: 0, }

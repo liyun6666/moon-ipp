@@ -16,7 +16,6 @@ jobs:
         run: |
           moon version --all
           moon update
-          moon install
       - name: Core and client checks
         run: |
           moon check --target wasm-gc --deny-warn

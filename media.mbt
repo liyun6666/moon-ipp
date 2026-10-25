@@ -1,7 +1,7 @@
 ///|
 pub(all) struct MediaSize {
-  x : Int
-  y : Int
+  x : Int32
+  y : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -12,7 +12,7 @@ pub extend MediaSize with @debug.Debug::{to_repr}
 
 ///|
 /// Dimensions are expressed in hundredths of a millimetre, as specified by PWG.
-pub fn MediaSize::new(x : Int, y : Int) -> MediaSize raise IppError {
+pub fn MediaSize::new(x : Int32, y : Int32) -> MediaSize raise IppError {
   if x < 1 || y < 1 {
     raise Invalid("media dimensions must be positive")
   }
@@ -39,10 +39,10 @@ pub fn MediaSize::collection(self : MediaSize) -> IppValue {
 
 ///|
 pub(all) struct MediaMargins {
-  top : Int
-  bottom : Int
-  left : Int
-  right : Int
+  top : Int32
+  bottom : Int32
+  left : Int32
+  right : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -53,10 +53,10 @@ pub extend MediaMargins with @debug.Debug::{to_repr}
 
 ///|
 pub fn MediaMargins::new(
-  top : Int,
-  bottom : Int,
-  left : Int,
-  right : Int,
+  top : Int32,
+  bottom : Int32,
+  left : Int32,
+  right : Int32,
 ) -> MediaMargins raise IppError {
   if top < 0 || bottom < 0 || left < 0 || right < 0 {
     raise Invalid("media margins cannot be negative")
@@ -203,7 +203,10 @@ fn optional_collection_keyword(
 }
 
 ///|
-fn required_collection_int(group : Group, name : String) -> Int raise IppError {
+fn required_collection_int(
+  group : Group,
+  name : String,
+) -> Int32 raise IppError {
   match required_collection_value(group, name) {
     Integer(value) => value
     _ => raise Invalid("media dimension or margin requires integer")

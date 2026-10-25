@@ -17,14 +17,14 @@ pub fn valid_attribute_name(name : String) -> Bool {
 }
 
 ///|
-fn valid_group_tag(tag : Int) -> Bool {
+fn valid_group_tag(tag : Int32) -> Bool {
   tag == 0x01 || tag == 0x02 || (tag >= 0x04 && tag <= 0x0a)
 }
 
 ///|
 pub fn decode(
   bytes : Bytes,
-  limits? : DecodeLimits = DecodeLimits::defaults(),
+  limits~ : DecodeLimits = DecodeLimits::defaults(),
 ) -> Message raise IppError {
   limits.validate()
   if bytes.length() < 9 {
@@ -117,7 +117,7 @@ pub fn decode(
 ///|
 pub fn encode(
   message : Message,
-  limits? : DecodeLimits = DecodeLimits::defaults(),
+  limits~ : DecodeLimits = DecodeLimits::defaults(),
 ) -> Bytes raise IppError {
   limits.validate()
   let _ = Version::new(message.version.major, message.version.minor)

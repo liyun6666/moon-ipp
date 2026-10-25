@@ -3,7 +3,7 @@
 pub(all) struct PrintPlan {
   printer : String
   options : JobOptions
-  document_bytes : Int
+  document_bytes : Int32
   diagnostics : Array[Diagnostic]
 } derive(Debug)
 
@@ -20,7 +20,7 @@ pub fn PrintPlan::can_submit(self : PrintPlan) -> Bool {
 pub fn Capabilities::plan(
   self : Capabilities,
   options : JobOptions,
-  document_bytes : Int,
+  document_bytes : Int32,
 ) -> PrintPlan raise IppError {
   if document_bytes < 0 {
     raise Invalid("document byte count cannot be negative")

@@ -1,7 +1,7 @@
 ///|
 pub(all) suberror IppError {
   Invalid(String)
-  Truncated(Int, Int)
+  Truncated(Int32, Int32)
   Limit(String)
   Protocol(String)
   Unsupported(String)
@@ -9,12 +9,12 @@ pub(all) suberror IppError {
 
 ///|
 pub(all) struct Version {
-  major : Int
-  minor : Int
+  major : Int32
+  minor : Int32
 } derive(Eq, Debug)
 
 ///|
-pub fn Version::new(major : Int, minor : Int) -> Version raise IppError {
+pub fn Version::new(major : Int32, minor : Int32) -> Version raise IppError {
   if !((major == 1 && (minor == 0 || minor == 1)) ||
     (major == 2 && minor >= 0 && minor <= 2)) {
     raise Invalid("unsupported IPP version")
@@ -39,11 +39,11 @@ pub fn Version::text(self : Version) -> String {
 
 ///|
 pub(all) struct DecodeLimits {
-  max_message_bytes : Int
-  max_attributes : Int
-  max_values : Int
-  max_collection_depth : Int
-  max_document_bytes : Int
+  max_message_bytes : Int32
+  max_attributes : Int32
+  max_values : Int32
+  max_collection_depth : Int32
+  max_document_bytes : Int32
 } derive(Eq, Debug)
 
 ///|

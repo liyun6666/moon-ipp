@@ -2,7 +2,7 @@
 pub(all) struct PrinterUri {
   scheme : String
   host : String
-  port : Int
+  port : Int32
   path : String
   ipv6 : Bool
 } derive(Eq, Debug)
@@ -14,7 +14,7 @@ pub extend PrinterUri with Eq::{equal, not_equal}
 pub extend PrinterUri with @debug.Debug::{to_repr}
 
 ///|
-fn parse_decimal(text : String, maximum : Int) -> Int raise IppError {
+fn parse_decimal(text : String, maximum : Int32) -> Int32 raise IppError {
   if text.is_empty() {
     raise Invalid("empty integer")
   }
@@ -33,7 +33,7 @@ fn parse_decimal(text : String, maximum : Int) -> Int raise IppError {
 }
 
 ///|
-fn string_slice(text : String, start : Int, end : Int) -> String {
+fn string_slice(text : String, start : Int32, end : Int32) -> String {
   text.exact_view(start~, end~).to_owned()
 }
 
@@ -65,7 +65,7 @@ fn valid_ipv4_literal(text : String) -> Bool {
 }
 
 ///|
-fn ipv6_units(text : String, allow_ipv4 : Bool) -> Int? {
+fn ipv6_units(text : String, allow_ipv4 : Bool) -> Int32? {
   if text.is_empty() {
     return Some(0)
   }

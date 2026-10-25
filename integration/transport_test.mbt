@@ -1,9 +1,9 @@
 ///|
 async fn exchange_with_response(
-  status : Int,
+  status : Int32,
   media_type : String?,
   body : Bytes,
-  maximum : Int,
+  maximum : Int32,
 ) -> Bytes {
   let server = @http.Server(@socket.Addr::parse("127.0.0.1:0"))
   defer server.close()
@@ -83,5 +83,34 @@ async test "real HTTP rejects missing or unrelated Content-Type" {
     } noraise {
       _ => fail("non-IPP response accepted")
     }
+  }
+}
+
+///|
+async test "an incomplete HTTP chunk cannot be accepted as a complete IPP response" {
+  let server = @socket.TcpServer(@socket.Addr::parse("127.0.0.1:0"))
+  defer server.close()
+  let endpoint = @ipp.PrinterUri::parse(
+    "ipp://127.0.0.1:\{server.addr.port()}/ipp/print",
+  )
+  try
+    @async.with_timeout(5000, () => {
+      @async.with_task_group(group => {
+        group.spawn_bg(() => {
+          let (connection, _) = server.accept()
+          defer connection.close()
+          let _ = connection.read_until("\r\n\r\n")
+          connection.write(
+            "HTTP/1.1 200 OK\r\nContent-Type: application/ipp\r\nTransfer-Encoding: chunked\r\n\r\n20\r\n",
+          )
+          connection.write(b"\x02\x00\x00\x00\x00\x00\x00\x01\x03")
+        })
+        @client.HttpTransport::new().exchange(endpoint, b"", 1024)
+      })
+    })
+  catch {
+    error => assert_true(error is @io.ReaderClosed)
+  } noraise {
+    _ => fail("truncated HTTP transfer accepted")
   }
 }
