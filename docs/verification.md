@@ -2,6 +2,12 @@
 
 本页记录可复现验证方法；GitHub Actions 保存每次运行的实际结果。
 
+## 0.1.4 实测结果
+
+2026-10-25，[CI 40179677640](https://github.com/liyun6666/moon-ipp/actions/runs/40179677640) 的 Windows/Linux 任务均成功：wasm-gc 69/69、JS 93/93、native 95/95，检查、构建、格式和 MSVC 探针通过。独立 CUPS 的既有流程及新增空结束请求全部通过；后者只收到一个字节未变的文档，任务正常完成。
+
+发布返回 HTTP 200，Mooncakes 确认 0.1.4 未撤回。独立工程下载并通过消费测试，全部 45 个代码与构建支持文件与发布源码一致。有效实现 4,806 行；问题、修复、协议依据和测试边界见 [0.1.4 复核](边界复核-0.1.4.md)。
+
 ## 0.1.3 实测结果
 
 2026-10-25，[CI 40170010056](https://github.com/liyun6666/moon-ipp/actions/runs/40170010056) 的 Windows/Linux 任务全部成功：wasm-gc 55/55、JS 69/69、native 74/74；Windows C4005 按错误检查，编译兼容探针、构建、脚本格式及 Linux CUPS 全流程均通过。
