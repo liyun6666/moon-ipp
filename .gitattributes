@@ -1,4 +1,11 @@
 * text=auto
 *.mbt text eol=lf
 *.mbti text eol=lf
+*.mbtx text eol=lf
+moon.mod text eol=lf
+moon.pkg text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.py text eol=lf
 *.pdf binary
