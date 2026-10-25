@@ -11,7 +11,7 @@
 
 name = "liyun6666/moon-ipp"
 
-version = "0.1.1"
+version = "0.1.2"
 
 readme = "README.md"
 

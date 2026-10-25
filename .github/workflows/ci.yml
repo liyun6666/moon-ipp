@@ -41,3 +41,19 @@ jobs:
         with:
           name: cups-interoperability-evidence
           path: interop-output/
+  verify-windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MoonBit stable
+        shell: pwsh
+        run: |
+          Invoke-RestMethod https://cli.moonbitlang.com/install/powershell.ps1 | Invoke-Expression
+          "$env:USERPROFILE\.moon\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Resolve dependencies
+        run: |
+          moon version --all
+          moon update
+      - name: Check all supported backends and build with MSVC
+        run: moon run scripts/verify.mbtx

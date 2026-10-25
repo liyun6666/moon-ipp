@@ -67,7 +67,7 @@ async fn execute(arguments : @cli.Arguments) -> Unit {
       return
     }
     @cli.Version => {
-      @stdio.stdout.write("moon-ipp 0.1.1\n")
+      @stdio.stdout.write("moon-ipp 0.1.2\n")
       return
     }
     @cli.Decode => {

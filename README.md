@@ -11,7 +11,7 @@ MoonBit 原生 IPP 网络打印协议库和客户端。业务系统可以查询�
 需要 MoonBit stable 2026-09-18 或更新的兼容版本。网络客户端依赖 `moonbitlang/async@0.22.4`；native 构建需要 C 编译器，Windows 异步库要求 MSVC。Linux CI 验证 native，JS 客户端通过 Node.js 测试。
 
 ```sh
-moon add liyun6666/moon-ipp@0.1.1
+moon add liyun6666/moon-ipp@0.1.2
 ```
 
 在 `moon.pkg` 中导入所需包：
@@ -31,6 +31,16 @@ cd moon-ipp
 moon update
 moon run cmd/main --target native -- help
 ```
+
+Windows 可安装 Visual Studio C++ Build Tools，然后由 MoonBit 脚本自动发现并初始化 MSVC；已有 MinGW/GCC 时也不需要修改系统 PATH：
+
+```sh
+moon run scripts/verify.mbtx
+moon run scripts/verify.mbtx --run help
+moon run scripts/verify.mbtx --run capabilities --uri ipp://localhost:8631/ipp/print
+```
+
+`--native-only` 只检查、测试和构建 native；默认验证 wasm-gc、JS、native 与格式。`--run` 将后续参数交给 native CLI。也可以在已经配置好 MSVC 的开发者终端直接使用 CLI。
 
 ## 库 API
 
@@ -106,9 +116,9 @@ python3 scripts/interop_cups.py
 
 ## 功能与边界
 
-- IPP 1.1/2.x 消息、属性组、多值、嵌套集合、常用标准值类型、未知值与二进制文档；默认上限为头部 1 MiB、文档 16 MiB、属性 4096 个、值 16384 个、集合深度 16。
+- IPP 1.1/2.x 消息、属性组、多值、嵌套集合、常用标准值类型、未知值与二进制文档；默认上限为头部 1 MiB、文档 16 MiB、属性 4096 个、值 16384 个、集合深度 16。属性组最多为属性预算加一，防止空组膨胀；尚未支持的扩展值标签明确拒绝。
 - 八个操作：Get-Printer-Attributes、Validate-Job、Print-Job、Create-Job、Send-Document、Get-Jobs、Get-Job-Attributes、Cancel-Job。
-- 份数、纸张、单双面、颜色、分辨率、质量、方向、number-up、页范围和文档格式预检；缺失能力通常警告，明确不支持则报错。
+- 份数、纸张、单双面、颜色、分辨率、质量、方向、number-up、页范围和文档格式预检；MIME 类型支持大小写及参数，比较时保留普通参数值的大小写含义；缺失能力通常警告，明确不支持则报错。
 - media-col 尺寸、四边页边距、纸盒及纸张类型；设备健康、队列摘要、能力差异和打印计划预览。
 - 有界 HTTP/HTTPS 传输、请求 ID 关联、超时和取消；同一 Client 只允许一个并发请求。Transport 可注入业务已有网络层。
 - 带类型标签的 JSON 保留集合、未知值和字节；CLI `encode`、`decode`、`compare` 可离线排查。
