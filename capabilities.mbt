@@ -41,10 +41,14 @@ pub fn Capabilities::from_response(
   if !response.is_success() {
     raise Protocol(status_name(response.code))
   }
+  if response.groups.filter(group => group.tag == 4).length() != 1 {
+    raise Protocol("expected exactly one printer attribute group")
+  }
   let printer = match response.find_group(4) {
     Some(group) => group
     None => raise Protocol("response has no printer attributes")
   }
+  validate_attribute_set(printer.attributes)
   { printer, }
 }
 
@@ -143,7 +147,15 @@ fn Capabilities::check_string(
         ),
       )
     Some(_) =>
-      if !self.strings(supported_name).contains(requested) {
+      if !self
+        .strings(supported_name)
+        .any(value => {
+          if request_name == "document-format" {
+            mime_types_equal(value, requested)
+          } else {
+            value == requested
+          }
+        }) {
         diagnostics.push(
           diagnostic(Error, request_name, "unsupported value: \{requested}"),
         )
@@ -192,6 +204,7 @@ pub fn Capabilities::validate_options(
   document_bytes? : Int = 0,
 ) -> Array[Diagnostic] raise IppError {
   options.validate()
+  validate_attribute_set(self.printer.attributes)
   if document_bytes < 0 {
     raise Invalid("negative document byte count")
   }

@@ -24,6 +24,7 @@ pub fn RequestContext::new(
   if language.is_empty() || language.length() > 63 {
     raise Invalid("invalid natural language")
   }
+  validate_string_value(0x48, language)
   { printer: PrinterUri::parse(uri), user, language, version: Version::v20(), }
 }
 

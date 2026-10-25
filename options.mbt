@@ -89,35 +89,6 @@ pub fn JobOptions::new(name : String, document_format : String) -> JobOptions {
 }
 
 ///|
-pub fn valid_mime_type(text : String) -> Bool {
-  if text.length() < 3 || text.length() > 255 {
-    return false
-  }
-  let parts = text.split("/").to_array()
-  if parts.length() != 2 || parts[0].is_empty() || parts[1].is_empty() {
-    return false
-  }
-  for char in text.to_array() {
-    let n = char.to_int()
-    if !((n >= 97 && n <= 122) ||
-      (n >= 48 && n <= 57) ||
-      n == 33 ||
-      n == 35 ||
-      n == 36 ||
-      n == 38 ||
-      n == 45 ||
-      n == 46 ||
-      n == 43 ||
-      n == 47 ||
-      n == 94 ||
-      n == 95) {
-      return false
-    }
-  }
-  true
-}
-
-///|
 pub fn JobOptions::validate(self : JobOptions) -> Unit raise IppError {
   let name_length = encode_utf8(self.name).length()
   if name_length < 1 || name_length > 255 {

@@ -86,6 +86,7 @@ pub fn Job::from_group(group : Group) -> Job raise IppError {
   if group.tag != 2 {
     raise Protocol("expected job attribute group")
   }
+  validate_attribute_set(group.attributes)
   let id = match group.find("job-id") {
     Some(attribute) =>
       match attribute.values {
@@ -95,22 +96,61 @@ pub fn Job::from_group(group : Group) -> Job raise IppError {
     None => raise Protocol("job group has no positive job-id")
   }
   let reasons = match group.find("job-state-reasons") {
-    Some(attribute) => attribute.string_values()
+    Some(attribute) =>
+      attribute.values.map(value => {
+        match value {
+          Keyword(reason) => reason
+          _ => raise Protocol("job-state-reasons requires keyword values")
+        }
+      })
     None => []
   }
-  let state = match group.get_int("job-state") {
-    Some(code) => Some(job_state_from_code(code))
+  let state = match group.find("job-state") {
+    Some(attribute) =>
+      match attribute.values {
+        [Enumeration(code)] if code > 0 => Some(job_state_from_code(code))
+        _ => raise Protocol("job-state requires one enumeration value")
+      }
+    None => None
+  }
+  let impressions_completed = match group.find("job-impressions-completed") {
+    Some(attribute) =>
+      match attribute.values {
+        [Integer(count)] if count >= 0 => Some(count)
+        _ =>
+          raise Protocol(
+            "job-impressions-completed requires one nonnegative integer",
+          )
+      }
     None => None
   }
   {
     id,
-    uri: group.get_string("job-uri"),
-    name: group.get_string("job-name"),
+    uri: job_optional_string(group, "job-uri", 0x45),
+    name: job_optional_string(group, "job-name", 0x42),
     state,
     reasons,
-    message: group.get_string("job-state-message"),
-    impressions_completed: group.get_int("job-impressions-completed"),
+    message: job_optional_string(group, "job-state-message", 0x41),
+    impressions_completed,
     attributes: group,
+  }
+}
+
+///|
+fn job_optional_string(
+  group : Group,
+  name : String,
+  tag : Int,
+) -> String? raise IppError {
+  match group.find(name) {
+    None => None
+    Some(attribute) =>
+      match attribute.values {
+        [value] if value.tag() == tag ||
+          (tag == 0x42 && value.tag() == 0x36) ||
+          (tag == 0x41 && value.tag() == 0x35) => value.as_string()
+        _ => raise Protocol("\{name} has invalid type or cardinality")
+      }
   }
 }
 
@@ -120,9 +160,15 @@ pub fn jobs_from_response(response : Message) -> Array[Job] raise IppError {
     raise Protocol(status_name(response.code))
   }
   let jobs : Array[Job] = []
+  let seen : Map[Int, Bool] = Map([])
   for group in response.groups {
     if group.tag == 2 {
-      jobs.push(Job::from_group(group))
+      let job = Job::from_group(group)
+      if seen.contains(job.id) {
+        raise Protocol("repeated job-id in response")
+      }
+      seen[job.id] = true
+      jobs.push(job)
     }
   }
   jobs

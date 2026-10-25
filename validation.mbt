@@ -1,5 +1,27 @@
 ///|
+fn validate_attribute_set(attributes : Array[Attribute]) -> Unit raise IppError {
+  let seen : Map[String, Bool] = Map([])
+  for attribute in attributes {
+    if !valid_attribute_name(attribute.name) || attribute.values.is_empty() {
+      raise Protocol("invalid or empty attribute")
+    }
+    if seen.contains(attribute.name) {
+      raise Protocol("duplicate attribute: \{attribute.name}")
+    }
+    seen[attribute.name] = true
+    let tag = attribute.values[0].tag()
+    if attribute.values.any(value => value.tag() != tag) {
+      raise Protocol("attribute mixes value tags")
+    }
+  }
+}
+
+///|
 pub fn validate_request(request : Message) -> Unit raise IppError {
+  let _ = Version::new(request.version.major, request.version.minor)
+  for group in request.groups {
+    validate_attribute_set(group.attributes)
+  }
   if operation_from_code(request.code) is None {
     raise Unsupported("request operation")
   }
@@ -123,6 +145,16 @@ pub fn validate_response(
   request : Message,
   response : Message,
 ) -> Unit raise IppError {
+  let _ = Version::new(response.version.major, response.version.minor)
+  for group in response.groups {
+    if !valid_group_tag(group.tag) {
+      raise Protocol("invalid response group tag")
+    }
+    validate_attribute_set(group.attributes)
+  }
+  if response.request_id < 1 {
+    raise Protocol("nonpositive response request-id")
+  }
   if response.request_id != request.request_id {
     raise Protocol("response request-id does not match request")
   }
@@ -136,7 +168,8 @@ pub fn validate_response(
   if !response.document.is_empty() {
     raise Protocol("unexpected document in response")
   }
-  if response.code > 0x05ff ||
+  if response.code < 0 ||
+    response.code > 0x05ff ||
     (response.code > 0x00ff && response.code < 0x0400) {
     raise Protocol("invalid status-code class")
   }

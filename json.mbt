@@ -138,6 +138,19 @@ pub fn Message::to_json(self : Message) -> Json {
 }
 
 ///|
+fn bounded_json_octets(
+  value : Json,
+  budget : DecodeBudget,
+) -> Bytes raise IppError {
+  let hex = json_as_string(value)
+  if hex.length() / 2 > 65535 ||
+    hex.length() / 2 > budget.limits.max_message_bytes {
+    raise Limit("JSON attribute octets")
+  }
+  bytes_from_hex(hex)
+}
+
+///|
 fn value_from_json(
   json : Json,
   budget : DecodeBudget,
@@ -161,7 +174,7 @@ fn value_from_json(
       }
       Enumeration(code)
     }
-    0x30 => Octets(bytes_from_hex(json_as_string(value)))
+    0x30 => Octets(bounded_json_octets(value, budget))
     0x31 => {
       let date : IppDateTime = {
         year: json_get_int(value, "year"),
@@ -231,7 +244,7 @@ fn value_from_json(
       OutOfBand(tag)
     }
     _ => {
-      let result = IppValue::Unknown(tag, bytes_from_hex(json_as_string(value)))
+      let result = IppValue::Unknown(tag, bounded_json_octets(value, budget))
       let _ = encode_scalar(result)
       if tag < 0x10 || tag > 0x7f || tag == 0x37 || tag == 0x4a {
         raise Invalid("unsupported JSON value tag")
@@ -277,6 +290,9 @@ pub fn message_from_json(
   )
   let groups : Array[Group] = []
   for json_group in json_as_array(json_field(json, "groups")) {
+    if groups.length() > limits.max_attributes {
+      raise Limit("JSON attribute group count")
+    }
     let tag = json_get_int(json_group, "tag")
     if !valid_group_tag(tag) {
       raise Invalid("invalid JSON group tag")

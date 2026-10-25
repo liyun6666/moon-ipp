@@ -104,7 +104,7 @@ pub fn MediaSpec::validate(self : MediaSpec) -> Unit raise IppError {
     }
     None => ()
   }
-  for keyword in [self.source, self.kind, self.name] {
+  for keyword in [self.source, self.kind] {
     match keyword {
       Some(value) =>
         if !valid_attribute_name(value) {
@@ -112,6 +112,10 @@ pub fn MediaSpec::validate(self : MediaSpec) -> Unit raise IppError {
         }
       None => ()
     }
+  }
+  match self.name {
+    Some(name) => validate_string_value(0x42, name)
+    None => ()
   }
 }
 
@@ -140,7 +144,16 @@ pub fn MediaSpec::collection(self : MediaSpec) -> IppValue raise IppError {
   }
   match self.name {
     Some(value) =>
-      fields.push(Attribute::new("media-size-name", Keyword(value)))
+      fields.push(
+        Attribute::new(
+          "media-size-name",
+          if valid_attribute_name(value) {
+            Keyword(value)
+          } else {
+            Name(value)
+          },
+        ),
+      )
     None => ()
   }
   Collection(fields)
@@ -149,7 +162,12 @@ pub fn MediaSpec::collection(self : MediaSpec) -> IppValue raise IppError {
 ///|
 fn collection_fields(value : IppValue) -> Group raise IppError {
   match value {
-    Collection(fields) => Group::printer(fields)
+    Collection(fields) => {
+      validate_attribute_set(fields) catch {
+        _ => raise Invalid("invalid or duplicate media collection field")
+      }
+      Group::printer(fields)
+    }
     _ => raise Invalid("media collection expected")
   }
 }
@@ -161,11 +179,26 @@ fn required_collection_value(
 ) -> IppValue raise IppError {
   match group.find(name) {
     Some(attribute) =>
-      match attribute.first() {
-        Some(value) => value
-        None => raise Invalid("empty media collection field")
+      match attribute.values {
+        [value] => value
+        _ => raise Invalid("media collection field must have exactly one value")
       }
     None => raise Invalid("missing media collection field: \{name}")
+  }
+}
+
+///|
+fn optional_collection_keyword(
+  group : Group,
+  name : String,
+) -> String? raise IppError {
+  match group.find(name) {
+    None => None
+    Some(_) =>
+      match required_collection_value(group, name) {
+        Keyword(value) => Some(value)
+        _ => raise Invalid("media collection field requires a keyword")
+      }
   }
 }
 
@@ -211,9 +244,17 @@ pub fn media_spec_from_collection(value : IppValue) -> MediaSpec raise IppError 
   let spec = MediaSpec::{
     size,
     margins,
-    source: fields.get_string("media-source"),
-    kind: fields.get_string("media-type"),
-    name: fields.get_string("media-size-name"),
+    source: optional_collection_keyword(fields, "media-source"),
+    kind: optional_collection_keyword(fields, "media-type"),
+    name: match fields.find("media-size-name") {
+      None => None
+      Some(_) =>
+        match required_collection_value(fields, "media-size-name") {
+          Keyword(value) | Name(value) | NameWithLanguage(_, value) =>
+            Some(value)
+          _ => raise Invalid("media-size-name requires a name or keyword")
+        }
+    },
   }
   spec.validate()
   spec

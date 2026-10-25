@@ -15,7 +15,8 @@ pub(all) struct Version {
 
 ///|
 pub fn Version::new(major : Int, minor : Int) -> Version raise IppError {
-  if major < 1 || major > 2 || minor < 0 || minor > 2 {
+  if !((major == 1 && (minor == 0 || minor == 1)) ||
+    (major == 2 && minor >= 0 && minor <= 2)) {
     raise Invalid("unsupported IPP version")
   }
   { major, minor, }

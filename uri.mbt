@@ -38,6 +38,120 @@ fn string_slice(text : String, start : Int, end : Int) -> String {
 }
 
 ///|
+fn valid_ipv4_literal(text : String) -> Bool {
+  let parts = text.split(".").to_array()
+  if parts.length() != 4 {
+    return false
+  }
+  for part in parts {
+    if part.is_empty() ||
+      part.length() > 3 ||
+      (part.length() > 1 && part[0] == '0') {
+      return false
+    }
+    let mut number = 0
+    for char in part {
+      let digit = char.to_int() - 48
+      if digit < 0 || digit > 9 {
+        return false
+      }
+      number = number * 10 + digit
+    }
+    if number > 255 {
+      return false
+    }
+  }
+  true
+}
+
+///|
+fn ipv6_units(text : String, allow_ipv4 : Bool) -> Int? {
+  if text.is_empty() {
+    return Some(0)
+  }
+  let parts = text.split(":").to_array()
+  let mut count = 0
+  for index, part in parts {
+    if part.contains(".") {
+      if !allow_ipv4 ||
+        index != parts.length() - 1 ||
+        !valid_ipv4_literal(part.to_owned()) {
+        return None
+      }
+      count += 2
+    } else {
+      if part.is_empty() || part.length() > 4 {
+        return None
+      }
+      let word = part.to_owned()
+      for i in 0..<word.length() {
+        if hex_nibble(word[i]) is None {
+          return None
+        }
+      }
+      count += 1
+    }
+  }
+  Some(count)
+}
+
+///|
+fn valid_ipv6_literal(host : String) -> Bool {
+  match host.split_once("::") {
+    Some((left, right)) => {
+      if right.contains("::") {
+        return false
+      }
+      match
+        (ipv6_units(left.to_owned(), false), ipv6_units(right.to_owned(), true)) {
+        (Some(a), Some(b)) => a + b < 8
+        _ => false
+      }
+    }
+    None => ipv6_units(host, true) == Some(8)
+  }
+}
+
+///|
+fn valid_dns_host(host : String) -> Bool {
+  let name = if host.has_suffix(".") {
+    string_slice(host, 0, host.length() - 1)
+  } else {
+    host
+  }
+  if name.is_empty() || name.length() > 253 {
+    return false
+  }
+  for label in name.split(".") {
+    if label.is_empty() ||
+      label.length() > 63 ||
+      label.has_prefix("-") ||
+      label.has_suffix("-") {
+      return false
+    }
+    for char in label {
+      let n = char.to_int()
+      if !((n >= 48 && n <= 57) ||
+        (n >= 65 && n <= 90) ||
+        (n >= 97 && n <= 122) ||
+        n == 45) {
+        return false
+      }
+    }
+  }
+  true
+}
+
+///|
+fn valid_path_character(char : UInt16) -> Bool {
+  let n = char.to_int()
+  (n >= 48 && n <= 57) ||
+  (n >= 65 && n <= 90) ||
+  (n >= 97 && n <= 122) ||
+  "-._~!$&'()*+,;=:@/".contains(char.to_char().unwrap().to_string())
+}
+
+///|
 pub fn PrinterUri::parse(text : String) -> PrinterUri raise IppError {
   if text.length() > 1023 {
     raise Invalid("printer URI exceeds 1023 characters")
@@ -51,7 +165,7 @@ pub fn PrinterUri::parse(text : String) -> PrinterUri raise IppError {
     Some(parts) => parts
     None => raise Invalid("URI must include scheme and authority")
   }
-  let scheme = scheme_view.to_owned()
+  let scheme = scheme_view.to_owned().to_lower()
   if scheme != "ipp" && scheme != "ipps" {
     raise Invalid("printer URI scheme must be ipp or ipps")
   }
@@ -83,7 +197,7 @@ pub fn PrinterUri::parse(text : String) -> PrinterUri raise IppError {
       None => raise Invalid("unterminated IPv6 host")
     }
     host = string_slice(authority, 1, closing)
-    if !host.contains(":") || host.is_empty() {
+    if !valid_ipv6_literal(host) {
       raise Invalid("invalid IPv6 host")
     }
     let suffix = string_slice(authority, closing + 1, authority.length())
@@ -101,15 +215,8 @@ pub fn PrinterUri::parse(text : String) -> PrinterUri raise IppError {
       }
       None => host = authority
     }
-    for char in host.to_array() {
-      let n = char.to_int()
-      if !((n >= 48 && n <= 57) ||
-        (n >= 65 && n <= 90) ||
-        (n >= 97 && n <= 122) ||
-        n == 45 ||
-        n == 46) {
-        raise Invalid("invalid hostname")
-      }
+    if !valid_dns_host(host) {
+      raise Invalid("invalid hostname")
     }
   }
   if host.is_empty() || port < 1 {
@@ -125,10 +232,17 @@ pub fn PrinterUri::parse(text : String) -> PrinterUri raise IppError {
       }
       i += 3
     } else {
+      if !valid_path_character(path[i]) {
+        raise Invalid("URI path contains an unescaped reserved character")
+      }
       i += 1
     }
   }
-  { scheme, host, port, path, ipv6, }
+  let result : PrinterUri = { scheme, host: host.to_lower(), port, path, ipv6, }
+  if result.text().length() > 1023 {
+    raise Invalid("normalized printer URI exceeds 1023 characters")
+  }
+  result
 }
 
 ///|

@@ -1,4 +1,37 @@
 ///|
+fn validate_string_value(tag : Int, text : String) -> Unit raise IppError {
+  let maximum = match tag {
+    0x41 | 0x45 => 1023
+    0x46 | 0x47 | 0x48 => 63
+    _ => 255
+  }
+  if text.length() > maximum || encode_utf8(text).length() > maximum {
+    raise Invalid("string exceeds the IPP value type's byte limit")
+  }
+  if tag >= 0x44 {
+    if text.is_empty() {
+      raise Invalid("empty ASCII attribute value")
+    }
+    for char in text {
+      let n = char.to_int()
+      if n >= 127 || (n < 32 && !(tag == 0x49 && n == 9)) {
+        raise Invalid("attribute requires printable ASCII")
+      }
+    }
+  }
+  if tag == 0x49 && !valid_mime_type(text) {
+    raise Invalid("invalid MIME media type")
+  }
+}
+
+///|
+fn decode_string_value(tag : Int, bytes : Bytes) -> String raise IppError {
+  let text = decode_utf8(bytes)
+  validate_string_value(tag, text)
+  text
+}
+
+///|
 fn require_length(bytes : Bytes, expected : Int) -> Unit raise IppError {
   if bytes.length() != expected {
     raise Invalid("value length \{bytes.length()}, expected \{expected}")
@@ -83,20 +116,24 @@ fn decode_scalar(tag : Int, bytes : Bytes) -> IppValue raise IppError {
     }
     0x35 => {
       let (language, text) = decode_localized(bytes)
+      validate_string_value(0x48, language)
+      validate_string_value(0x41, text)
       TextWithLanguage(language, text)
     }
     0x36 => {
       let (language, text) = decode_localized(bytes)
+      validate_string_value(0x48, language)
+      validate_string_value(0x42, text)
       NameWithLanguage(language, text)
     }
-    0x41 => Text(decode_utf8(bytes))
-    0x42 => Name(decode_utf8(bytes))
-    0x44 => Keyword(decode_utf8(bytes))
-    0x45 => Uri(decode_utf8(bytes))
-    0x46 => UriScheme(decode_utf8(bytes))
-    0x47 => Charset(decode_utf8(bytes))
-    0x48 => Language(decode_utf8(bytes))
-    0x49 => MimeType(decode_utf8(bytes))
+    0x41 => Text(decode_string_value(tag, bytes))
+    0x42 => Name(decode_string_value(tag, bytes))
+    0x44 => Keyword(decode_string_value(tag, bytes))
+    0x45 => Uri(decode_string_value(tag, bytes))
+    0x46 => UriScheme(decode_string_value(tag, bytes))
+    0x47 => Charset(decode_string_value(tag, bytes))
+    0x48 => Language(decode_string_value(tag, bytes))
+    0x49 => MimeType(decode_string_value(tag, bytes))
     0x10 | 0x12 | 0x13 | 0x15 | 0x16 | 0x17 => {
       require_length(bytes, 0)
       OutOfBand(tag)
@@ -104,7 +141,7 @@ fn decode_scalar(tag : Int, bytes : Bytes) -> IppValue raise IppError {
     0x34 | 0x37 | 0x4a =>
       raise Invalid("collection structural tag outside collection")
     _ => {
-      if tag < 0x10 || tag > 0x7f {
+      if tag < 0x10 || tag >= 0x7f {
         raise Unsupported("extended value tags")
       }
       Unknown(tag, bytes)
@@ -161,14 +198,28 @@ fn encode_scalar(value : IppValue) -> Bytes raise IppError {
     | UriScheme(s)
     | Charset(s)
     | Language(s)
-    | MimeType(s) => output.write_bytes(encode_utf8(s))
-    Octets(bytes) => output.write_bytes(bytes)
-    Unknown(tag, bytes) =>
+    | MimeType(s) => {
+      validate_string_value(value.tag(), s)
+      output.write_bytes(encode_utf8(s))
+    }
+    Octets(bytes) => {
+      if bytes.length() > 65535 {
+        raise Invalid("octet value exceeds wire length")
+      }
+      output.write_bytes(bytes)
+    }
+    Unknown(tag, bytes) => {
+      if bytes.length() > 65535 {
+        raise Invalid("unknown value exceeds wire length")
+      }
       match decode_scalar(tag, bytes) {
         Unknown(_, _) => output.write_bytes(bytes)
         _ => raise Invalid("Unknown must use an unrecognized value tag")
       }
+    }
     TextWithLanguage(language, text) | NameWithLanguage(language, text) => {
+      validate_string_value(0x48, language)
+      validate_string_value(if value.tag() == 0x35 { 0x41 } else { 0x42 }, text)
       put_length_bytes(output, encode_utf8(language))
       put_length_bytes(output, encode_utf8(text))
     }
@@ -193,7 +244,7 @@ fn write_entry(
   name : String,
   bytes : Bytes,
 ) -> Unit raise IppError {
-  if tag < 0x10 || tag > 0x7f {
+  if tag < 0x10 || tag >= 0x7f {
     raise Unsupported("extended value tags")
   }
   put_byte(output, tag)

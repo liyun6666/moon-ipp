@@ -49,6 +49,9 @@ pub fn decode(
     let tag = reader.byte()
     if tag == 0x03 {
       if group_tag != 0 {
+        if groups.length() > limits.max_attributes {
+          raise Limit("attribute group count")
+        }
         groups.push({ tag: group_tag, attributes, })
       }
       if reader.offset > limits.max_message_bytes {
@@ -66,6 +69,9 @@ pub fn decode(
         raise Invalid("invalid attribute group tag \{tag}")
       }
       if group_tag != 0 {
+        if groups.length() > limits.max_attributes {
+          raise Limit("attribute group count")
+        }
         groups.push({ tag: group_tag, attributes, })
       }
       group_tag = tag
@@ -120,6 +126,10 @@ pub fn encode(
   }
   if message.document.length() > limits.max_document_bytes {
     raise Limit("document bytes")
+  }
+  if message.groups.length() > limits.max_attributes &&
+    message.groups.length() - limits.max_attributes > 1 {
+    raise Limit("attribute group count")
   }
   let output = @buffer.Buffer()
   let budget : DecodeBudget = { limits, attributes: 0, values: 0, }

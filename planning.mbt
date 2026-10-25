@@ -58,7 +58,7 @@ pub fn Capabilities::choose_format(
     if !valid_mime_type(format) {
       raise Invalid("invalid candidate MIME type")
     }
-    if supported.contains(format) {
+    if supported.any(value => mime_types_equal(value, format)) {
       return format
     }
   }
