@@ -76,6 +76,59 @@ fn stub() -> StubTransport {
 }
 
 ///|
+test "authorization rejects control bytes before any HTTP request" {
+  for
+    value in [
+      "Bearer token\u0000", "Bearer token\u007f", "Bearer token\r\nX: 1", "   ",
+    ] {
+    try HttpTransport::new(authorization=value) catch {
+      error => assert_true(error is @ipp.Invalid(_))
+    } noraise {
+      _ => fail("invalid HTTP authorization accepted")
+    }
+  }
+}
+
+///|
+async test "client refuses a different target before any transport call" {
+  let transport = stub()
+  let client = Client::new("ipp://localhost/ipp/print", transport)
+  let request = @ipp.RequestContext::new("ipp://other/ipp/print").print_job(
+    1,
+    @ipp.JobOptions::new("Report", "application/pdf"),
+    b"pdf",
+  )
+  try client.exchange(request) catch {
+    error => assert_true(error is @ipp.Invalid(_))
+  } noraise {
+    _ => fail("sent request to the wrong printer")
+  }
+  assert_eq(transport.requests.length(), 0)
+}
+
+///|
+async test "invalid print arguments are rejected before preflight network IO" {
+  let transport = stub()
+  let client = Client::new("ipp://localhost/ipp/print", transport)
+  for document in [b"", b"pdf"] {
+    let options = @ipp.JobOptions::new(
+      if document.is_empty() {
+        "Report"
+      } else {
+        ""
+      },
+      "application/pdf",
+    )
+    try client.print_job(options, document) catch {
+      error => assert_true(error is @ipp.Invalid(_))
+    } noraise {
+      _ => fail("invalid submission accepted")
+    }
+  }
+  assert_eq(transport.requests.length(), 0)
+}
+
+///|
 async test "client preflight validates before submitting" {
   let transport = stub()
   let client = Client::new("ipp://localhost/ipp/print", transport)

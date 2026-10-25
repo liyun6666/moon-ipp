@@ -30,7 +30,8 @@ pub fn HttpTransport::new(
 ) -> HttpTransport raise @ipp.IppError {
   match authorization {
     Some(value) =>
-      if value.is_empty() || value.contains("\r") || value.contains("\n") {
+      if value.trim().is_empty() ||
+        value.to_array().any(char => char.to_int() < 32 || char.to_int() >= 127) {
         raise @ipp.Invalid("invalid authorization header")
       }
     None => ()
@@ -45,6 +46,7 @@ pub impl Transport for HttpTransport with fn exchange(
   request,
   maximum,
 ) {
+  let endpoint = @ipp.PrinterUri::parse(endpoint.text())
   if maximum < 9 {
     raise @ipp.Invalid("response limit must be at least 9")
   }
@@ -57,7 +59,7 @@ pub impl Transport for HttpTransport with fn exchange(
   let headers : Map[@http.CaseInsensitiveString, String] = Map([
     (@http.CaseInsensitiveString("Content-Type"), "application/ipp"),
     (@http.CaseInsensitiveString("Accept"), "application/ipp"),
-    (@http.CaseInsensitiveString("User-Agent"), "moon-ipp/0.1.1"),
+    (@http.CaseInsensitiveString("User-Agent"), "moon-ipp/0.1.2"),
   ])
   match self.authorization {
     Some(value) => {
@@ -79,7 +81,7 @@ pub impl Transport for HttpTransport with fn exchange(
   }
   let media_type = match content_type.split_once(";") {
     Some((media, _)) => media.trim().to_owned()
-    None => content_type
+    None => content_type.trim().to_owned()
   }
   if media_type != "application/ipp" {
     raise UnexpectedContentType(content_type)

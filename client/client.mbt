@@ -51,6 +51,17 @@ pub async fn Client::exchange(
     raise ConcurrentRequest
   }
   @ipp.validate_request(request)
+  let target = match request.find(1, "printer-uri") {
+    Some(attribute) =>
+      match attribute.first() {
+        Some(@ipp.Uri(uri)) => @ipp.PrinterUri::parse(uri)
+        _ => raise @ipp.Invalid("missing printer target")
+      }
+    None => raise @ipp.Invalid("missing printer target")
+  }
+  if target != self.context.printer {
+    raise @ipp.Invalid("request printer-uri does not match client endpoint")
+  }
   let payload = @ipp.encode(request, limits=self.limits)
   let operation = match @ipp.operation_from_code(request.code) {
     Some(operation) => operation
@@ -115,6 +126,10 @@ pub async fn Client::print_job(
 ) -> @ipp.Job {
   if document.length() > self.limits.max_document_bytes {
     raise @ipp.Limit("document bytes")
+  }
+  options.validate()
+  if document.is_empty() {
+    raise @ipp.Invalid("print document must not be empty")
   }
   if preflight {
     let capabilities = self.capabilities()

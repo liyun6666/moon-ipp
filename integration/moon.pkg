@@ -1,0 +1,9 @@
+import {
+  "liyun6666/moon-ipp" @ipp,
+  "liyun6666/moon-ipp/client",
+  "moonbitlang/async",
+  "moonbitlang/async/http",
+  "moonbitlang/async/socket",
+} for "test"
+
+supported_targets = "native"
