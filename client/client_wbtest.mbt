@@ -45,7 +45,10 @@ impl Transport for StubTransport with fn exchange(
       ]),
     )
   }
-  if request.code == 2 || request.code == 9 || request.code == 5 {
+  if request.code == 2 ||
+    request.code == 9 ||
+    request.code == 5 ||
+    request.code == 6 {
     let attributes = [@ipp.Attribute::new("job-state", @ipp.Enumeration(9))]
     if !self.omit_job_id {
       attributes.push(
@@ -280,4 +283,61 @@ async test "accepted create without job identity cannot be safely repeated" {
     _ => fail("accepted create has no job identity")
   }
   assert_eq(transport.requests.length(), 1)
+}
+
+///|
+async test "accepted Send-Document must identify the original job" {
+  for
+    transport in [
+      StubTransport::{ ..stub(), wrong_job_id: true, },
+      StubTransport::{ ..stub(), omit_job_id: true, },
+    ] {
+    let client = Client::new("ipp://localhost/ipp/print", transport)
+    try client.send_document(27, "application/pdf", b"pdf") catch {
+      error => assert_true(error is SubmissionUncertain(_))
+    } noraise {
+      _ => fail("document accepted without matching job identity")
+    }
+    assert_eq(transport.requests.length(), 1)
+    assert_false(client.busy)
+  }
+}
+
+///|
+async test "empty final document is sent once and preserves the job identity" {
+  let transport = stub()
+  let client = Client::new("ipp://localhost/ipp/print", transport)
+  let response = client.send_document(27, "application/pdf", b"", last=true)
+  assert_eq(@ipp.job_from_response(response).id, 27)
+  assert_eq(transport.requests.length(), 1)
+  assert_true(transport.requests[0].document.is_empty())
+  try client.send_document(27, "application/pdf", b"", last=false) catch {
+    error => assert_true(error is @ipp.Invalid(_))
+  } noraise {
+    _ => fail("empty non-final request sent")
+  }
+  assert_eq(transport.requests.length(), 1)
+}
+
+///|
+async test "request ID wraps to a positive ID and a failed exchange releases the client" {
+  let transport = StubTransport::{ ..stub(), fail_print: true, }
+  let client = Client::new("ipp://localhost/ipp/print", transport)
+  client.next_id = 2147483647
+  try
+    client.print_job(
+      @ipp.JobOptions::new("Report", "application/pdf"),
+      b"pdf",
+      preflight=false,
+    )
+  catch {
+    error => assert_true(error is SubmissionUncertain(_))
+  } noraise {
+    _ => fail("expected lost submission response")
+  }
+  let _ = client.printer_attributes()
+  assert_eq(transport.requests.map(request => request.request_id), [
+    2147483647, 1,
+  ])
+  assert_false(client.busy)
 }

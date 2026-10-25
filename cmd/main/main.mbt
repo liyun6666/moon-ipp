@@ -31,7 +31,7 @@ async fn read_json(path : String) -> Json {
   let maximum = limits.max_document_bytes * 2 + limits.max_message_bytes * 8
   let bytes = read_bytes(path, maximum)
   let text = @utf8.decode(bytes)
-  @json.parse(text)
+  @json.parse(text, max_nesting_depth=128, reject_duplicate_keys=true)
 }
 
 ///|
@@ -67,7 +67,7 @@ async fn execute(arguments : @cli.Arguments) -> Unit {
       return
     }
     @cli.Version => {
-      @stdio.stdout.write("moon-ipp 0.1.3\n")
+      @stdio.stdout.write("moon-ipp 0.1.4\n")
       return
     }
     @cli.Decode => {

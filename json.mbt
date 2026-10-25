@@ -143,8 +143,8 @@ fn bounded_json_octets(
   budget : DecodeBudget,
 ) -> Bytes raise IppError {
   let hex = json_as_string(value)
-  if hex.length() / 2 > 65535 ||
-    hex.length() / 2 > budget.limits.max_message_bytes {
+  if hex.length() / 2 > 32767 ||
+    hex.length() / 2 > budget.limits.max_message_bytes - budget.json_bytes {
     raise Limit("JSON attribute octets")
   }
   bytes_from_hex(hex)
@@ -157,9 +157,10 @@ fn value_from_json(
   depth : Int32,
 ) -> IppValue raise IppError {
   budget.value()
+  budget.json_size(5)
   let tag = json_get_int(json, "tag")
   let value = json_field(json, "value")
-  match tag {
+  let result = match tag {
     0x21 => Integer(json_as_int(value))
     0x22 =>
       match value {
@@ -213,6 +214,7 @@ fn value_from_json(
       if depth >= budget.limits.max_collection_depth {
         raise Limit("JSON collection nesting")
       }
+      budget.json_size(5) // endCollection entry
       let members : Array[Attribute] = []
       for field in json_as_array(value) {
         members.push(attribute_from_json(field, budget, depth + 1))
@@ -252,6 +254,10 @@ fn value_from_json(
       result
     }
   }
+  if !(result is Collection(_)) {
+    budget.json_size(encode_scalar(result).length())
+  }
+  result
 }
 
 ///|
@@ -265,14 +271,15 @@ fn attribute_from_json(
   if !valid_attribute_name(name) {
     raise Invalid("invalid JSON attribute name")
   }
+  budget.json_size(name.length())
+  if depth > 0 {
+    budget.json_size(5) // memberAttrName entry
+  }
   let values : Array[IppValue] = []
   for item in json_as_array(json_field(json, "values")) {
     values.push(value_from_json(item, budget, depth))
   }
-  if values.is_empty() ||
-    values.any(fn(value) { value.tag() != values[0].tag() }) {
-    raise Invalid("JSON attribute requires nonempty homogeneous values")
-  }
+  validate_value_set(values)
   { name, values, }
 }
 
@@ -282,7 +289,15 @@ pub fn message_from_json(
   limits~ : DecodeLimits = DecodeLimits::defaults(),
 ) -> Message raise IppError {
   limits.validate()
-  let budget : DecodeBudget = { limits, attributes: 0, values: 0, }
+  // The header and end-of-attributes delimiter cost nine bytes. Reserve wire
+  // bytes as values are imported, rather than building an oversized tree and
+  // allocating all octets before the final encoder checks its size.
+  let budget : DecodeBudget = {
+    limits,
+    attributes: 0,
+    values: 0,
+    json_bytes: 9,
+  }
   let version = json_field(json, "version")
   let version = Version::new(
     json_get_int(version, "major"),
@@ -293,6 +308,7 @@ pub fn message_from_json(
     if groups.length() > limits.max_attributes {
       raise Limit("JSON attribute group count")
     }
+    budget.json_size(1)
     let tag = json_get_int(json_group, "tag")
     if !valid_group_tag(tag) {
       raise Invalid("invalid JSON group tag")

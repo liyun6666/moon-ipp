@@ -3,6 +3,9 @@ pub fn valid_attribute_name(name : String) -> Bool {
   if name.length() < 1 || name.length() > 255 {
     return false
   }
+  if name[0] < 'a' || name[0] > 'z' {
+    return false
+  }
   for char in name.to_array() {
     let n = char.to_int()
     if !((n >= 97 && n <= 122) ||
@@ -34,14 +37,23 @@ pub fn decode(
   reader.limit = limits.max_message_bytes
   let version = Version::new(reader.byte(), reader.byte())
   let code = reader.u16()
+  if code > 32767 {
+    raise Invalid("negative operation or status code")
+  }
   let request_id = reader.i32()
   if request_id < 1 {
     raise Invalid("request-id must be positive")
   }
-  let budget : DecodeBudget = { limits, attributes: 0, values: 0, }
+  let budget : DecodeBudget = {
+    limits,
+    attributes: 0,
+    values: 0,
+    json_bytes: 0,
+  }
   let groups : Array[Group] = []
   let mut group_tag = 0
   let mut attributes : Array[Attribute] = []
+  let mut seen : Map[String, Bool] = Map([])
   while true {
     if reader.offset > limits.max_message_bytes {
       raise Limit("message bytes")
@@ -76,6 +88,7 @@ pub fn decode(
       }
       group_tag = tag
       attributes = []
+      seen = Map([])
       continue
     }
     if group_tag == 0 {
@@ -95,8 +108,8 @@ pub fn decode(
         raise Invalid("additional value without an attribute")
       }
       let last = attributes[attributes.length() - 1]
-      if last.values[0].tag() != value.tag() {
-        raise Invalid("attribute mixes value tags")
+      if last.values[0] is OutOfBand(_) || value is OutOfBand(_) {
+        raise Invalid("out-of-band attribute must have exactly one value")
       }
       last.values.push(value)
     } else {
@@ -104,9 +117,10 @@ pub fn decode(
       if !valid_attribute_name(name) {
         raise Invalid("invalid attribute name")
       }
-      if attributes.any(fn(attribute) { attribute.name == name }) {
+      if seen.contains(name) {
         raise Invalid("duplicate attribute within group")
       }
+      seen[name] = true
       attributes.push({ name, values: [value], })
     }
   } nobreak {
@@ -121,6 +135,9 @@ pub fn encode(
 ) -> Bytes raise IppError {
   limits.validate()
   let _ = Version::new(message.version.major, message.version.minor)
+  if message.code < 0 || message.code > 32767 {
+    raise Invalid("operation or status code exceeds signed wire range")
+  }
   if message.request_id < 1 {
     raise Invalid("request-id must be positive")
   }
@@ -132,7 +149,12 @@ pub fn encode(
     raise Limit("attribute group count")
   }
   let output = @buffer.Buffer()
-  let budget : DecodeBudget = { limits, attributes: 0, values: 0, }
+  let budget : DecodeBudget = {
+    limits,
+    attributes: 0,
+    values: 0,
+    json_bytes: 0,
+  }
   put_byte(output, message.version.major)
   put_byte(output, message.version.minor)
   put_u16(output, message.code)
@@ -148,15 +170,13 @@ pub fn encode(
       if !valid_attribute_name(attribute.name) || attribute.values.is_empty() {
         raise Invalid("invalid attribute")
       }
+      validate_value_set(attribute.values)
       if seen.contains(attribute.name) {
         raise Invalid("duplicate attribute within group")
       }
       seen[attribute.name] = true
       for index, value in attribute.values {
         budget.value()
-        if value.tag() != attribute.values[0].tag() {
-          raise Invalid("attribute mixes value tags")
-        }
         let name = if index == 0 { attribute.name } else { "" }
         match value {
           Collection(members) => {

@@ -68,11 +68,9 @@ test "malformed scalar widths and boolean values are rejected" {
 }
 
 ///|
-test "additional values need a preceding name and consistent tags" {
+test "additional values need a preceding name and cannot extend out-of-band values" {
   rejects(@lib.bytes_from_hex("0200000b000000010421000000040000000103"))
-  rejects(
-    @lib.bytes_from_hex("0200000b00000001042100017800040000000122000000010103"),
-  )
+  rejects(@lib.bytes_from_hex("0200000b000000010413000178000022000000010103"))
 }
 
 ///|
@@ -158,14 +156,14 @@ test "collection end marker and member framing are mandatory" {
 }
 
 ///|
-test "wire names and mixed value sets are validated on encode" {
+test "wire names and unavailable value sets are validated on encode" {
   for
     attribute in [
       @lib.Attribute::{ name: "UPPER", values: [@lib.Integer(1)], },
       @lib.Attribute::{ name: "empty", values: [], },
       @lib.Attribute::{
-        name: "mixed",
-        values: [@lib.Integer(1), @lib.Boolean(true)],
+        name: "unavailable",
+        values: [@lib.OutOfBand(0x13), @lib.Boolean(true)],
       },
     ] {
     try

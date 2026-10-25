@@ -148,7 +148,10 @@ async fn main {
       ["test", "--deny-warn"],
       ["build", "--deny-warn"],
       ["fmt", "--check"],
-      ["fmt", "scripts/verify.mbtx", "scripts/msvc-cl.mbtx", "--check"],
+      [
+        "fmt", "scripts/verify.mbtx", "scripts/msvc-cl.mbtx", "scripts/interop_boundaries.mbtx",
+        "--check",
+      ],
     ]
   }
   for command in commands {

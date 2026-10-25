@@ -90,6 +90,9 @@ pub fn JobOptions::new(name : String, document_format : String) -> JobOptions {
 
 ///|
 pub fn JobOptions::validate(self : JobOptions) -> Unit raise IppError {
+  if self.name.is_empty() || self.name.length() > 255 {
+    raise Invalid("job name must be 1 to 255 UTF-8 bytes")
+  }
   let name_length = encode_utf8(self.name).length()
   if name_length < 1 || name_length > 255 {
     raise Invalid("job name must be 1 to 255 UTF-8 bytes")

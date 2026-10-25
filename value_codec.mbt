@@ -22,6 +22,20 @@ fn validate_string_value(tag : Int32, text : String) -> Unit raise IppError {
   if tag == 0x49 && !valid_mime_type(text) {
     raise Invalid("invalid MIME media type")
   }
+  if tag == 0x44 && !valid_attribute_name(text) {
+    raise Invalid("invalid keyword syntax")
+  }
+}
+
+///|
+// RFC 8011 section 5.1 permits mixed syntaxes for union-valued attributes.
+// Attribute-specific readers enforce their own types. Out-of-band values
+// represent an entire unavailable attribute and must remain single-valued.
+fn validate_value_set(values : Array[IppValue]) -> Unit raise IppError {
+  if values.is_empty() ||
+    (values.length() > 1 && values.any(value => value is OutOfBand(_))) {
+    raise Invalid("attribute requires values or one out-of-band value")
+  }
 }
 
 ///|
@@ -73,7 +87,12 @@ fn decode_scalar(tag : Int32, bytes : Bytes) -> IppValue raise IppError {
       }
       Enumeration(value)
     }
-    0x30 => Octets(bytes)
+    0x30 => {
+      if bytes.length() > 1023 {
+        raise Invalid("octetString exceeds 1023 bytes")
+      }
+      Octets(bytes)
+    }
     0x31 => {
       require_length(bytes, 11)
       let date : IppDateTime = {
@@ -203,13 +222,13 @@ fn encode_scalar(value : IppValue) -> Bytes raise IppError {
       output.write_bytes(encode_utf8(s))
     }
     Octets(bytes) => {
-      if bytes.length() > 65535 {
-        raise Invalid("octet value exceeds wire length")
+      if bytes.length() > 1023 {
+        raise Invalid("octetString exceeds 1023 bytes")
       }
       output.write_bytes(bytes)
     }
     Unknown(tag, bytes) => {
-      if bytes.length() > 65535 {
+      if bytes.length() > 32767 {
         raise Invalid("unknown value exceeds wire length")
       }
       match decode_scalar(tag, bytes) {
@@ -257,22 +276,34 @@ priv struct DecodeBudget {
   limits : DecodeLimits
   mut attributes : Int32
   mut values : Int32
+  mut json_bytes : Int32
+}
+
+///|
+fn DecodeBudget::json_size(
+  self : DecodeBudget,
+  count : Int32,
+) -> Unit raise IppError {
+  if count < 0 || count > self.limits.max_message_bytes - self.json_bytes {
+    raise Limit("JSON message bytes")
+  }
+  self.json_bytes += count
 }
 
 ///|
 fn DecodeBudget::attribute(self : DecodeBudget) -> Unit raise IppError {
-  self.attributes += 1
-  if self.attributes > self.limits.max_attributes {
+  if self.attributes >= self.limits.max_attributes {
     raise Limit("attribute count")
   }
+  self.attributes += 1
 }
 
 ///|
 fn DecodeBudget::value(self : DecodeBudget) -> Unit raise IppError {
-  self.values += 1
-  if self.values > self.limits.max_values {
+  if self.values >= self.limits.max_values {
     raise Limit("value count")
   }
+  self.values += 1
 }
 
 ///|
@@ -333,8 +364,9 @@ fn decode_collection(
       } else {
         decode_scalar(tag, bytes)
       }
-      if member_values.length() > 0 && member_values[0].tag() != value.tag() {
-        raise Invalid("collection member mixes value tags")
+      if !member_values.is_empty() &&
+        (member_values[0] is OutOfBand(_) || value is OutOfBand(_)) {
+        raise Invalid("out-of-band collection member must have one value")
       }
       member_values.push(value)
     }
@@ -359,6 +391,7 @@ fn encode_collection(
     if !valid_attribute_name(field.name) || field.values.is_empty() {
       raise Invalid("invalid collection member")
     }
+    validate_value_set(field.values)
     if seen.contains(field.name) {
       raise Invalid("duplicate collection member")
     }
@@ -366,9 +399,6 @@ fn encode_collection(
     write_entry(output, 0x4a, "", encode_utf8(field.name))
     for value in field.values {
       budget.value()
-      if value.tag() != field.values[0].tag() {
-        raise Invalid("collection member mixes value tags")
-      }
       match value {
         Collection(children) => {
           write_entry(output, 0x34, "", b"")

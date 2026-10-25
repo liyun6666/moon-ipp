@@ -157,6 +157,9 @@ fn require_allowed(
   command : Command,
   name : String,
 ) -> Unit raise @ipp.IppError {
+  if command == Help || command == Version {
+    raise @ipp.Invalid("help and version do not accept options")
+  }
   let allowed = match name {
     "uri" | "user" | "timeout" =>
       command != Decode && command != Encode && command != Compare
@@ -359,7 +362,7 @@ pub fn parse(arguments : Array[String]) -> Arguments raise @ipp.IppError {
 ///|
 pub fn help() -> String {
   let text =
-    #|moon-ipp 0.1.3 — MoonBit IPP library and client
+    #|moon-ipp 0.1.4 — MoonBit IPP library and client
     #|Usage: moon run cmd/main --target native -- <command> [options]
     #|
     #|Commands:

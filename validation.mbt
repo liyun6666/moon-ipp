@@ -1,5 +1,16 @@
 ///|
 fn validate_attribute_set(attributes : Array[Attribute]) -> Unit raise IppError {
+  validate_attribute_tree(attributes, 0)
+}
+
+///|
+fn validate_attribute_tree(
+  attributes : Array[Attribute],
+  depth : Int32,
+) -> Unit raise IppError {
+  if depth > 64 {
+    raise Protocol("attribute collection exceeds supported nesting")
+  }
   let seen : Map[String, Bool] = Map([])
   for attribute in attributes {
     if !valid_attribute_name(attribute.name) || attribute.values.is_empty() {
@@ -9,9 +20,18 @@ fn validate_attribute_set(attributes : Array[Attribute]) -> Unit raise IppError 
       raise Protocol("duplicate attribute: \{attribute.name}")
     }
     seen[attribute.name] = true
-    let tag = attribute.values[0].tag()
-    if attribute.values.any(value => value.tag() != tag) {
-      raise Protocol("attribute mixes value tags")
+    validate_value_set(attribute.values) catch {
+      _ => raise Protocol("invalid out-of-band value set")
+    }
+    for value in attribute.values {
+      match value {
+        Collection(members) => validate_attribute_tree(members, depth + 1)
+        _ => {
+          let _ = encode_scalar(value) catch {
+            _ => raise Protocol("invalid attribute value: \{attribute.name}")
+          }
+        }
+      }
     }
   }
 }
@@ -62,12 +82,12 @@ pub fn validate_request(request : Message) -> Unit raise IppError {
     Some(SendDocument) => {
       require_job_id(operation)
       require_document_format(operation)
-      match required_single_value(operation, "last-document") {
-        Boolean(_) => ()
+      let last = match required_single_value(operation, "last-document") {
+        Boolean(value) => value
         _ => raise Invalid("Send-Document requires one last-document boolean")
       }
-      if request.document.is_empty() {
-        raise Invalid("Send-Document requires a document")
+      if request.document.is_empty() && !last {
+        raise Invalid("non-final Send-Document requires a document")
       }
     }
     Some(CancelJob) | Some(GetJobAttributes) => {

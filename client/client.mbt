@@ -161,7 +161,7 @@ pub async fn Client::send_document(
   document : Bytes,
   last~ : Bool = true,
 ) -> @ipp.Message {
-  self.exchange(
+  let response = self.exchange(
     self.context.send_document(
       self.request_id(),
       job_id,
@@ -170,6 +170,13 @@ pub async fn Client::send_document(
       last~,
     ),
   )
+  let accepted = accepted_job(response)
+  if accepted.id != job_id {
+    raise SubmissionUncertain(
+      "printer accepted Send-Document but returned a different job-id; query the original job before sending again",
+    )
+  }
+  response
 }
 
 ///|

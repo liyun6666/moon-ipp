@@ -62,6 +62,9 @@ fn Reader::bytes(self : Reader, count : Int32) -> Bytes raise IppError {
 ///|
 fn Reader::length_bytes(self : Reader) -> Bytes raise IppError {
   let count = self.u16()
+  if count > 32767 {
+    raise Invalid("negative signed wire length")
+  }
   self.bytes(count)
 }
 
@@ -95,6 +98,9 @@ fn put_length_bytes(
   output : @buffer.Buffer,
   bytes : Bytes,
 ) -> Unit raise IppError {
+  if bytes.length() > 32767 {
+    raise Invalid("value exceeds signed wire length")
+  }
   put_u16(output, bytes.length())
   output.write_bytes(bytes)
 }
@@ -107,7 +113,28 @@ fn decode_utf8(bytes : Bytes) -> String raise IppError {
 }
 
 ///|
-fn encode_utf8(text : String) -> Bytes {
+fn encode_utf8(text : String) -> Bytes raise IppError {
+  // Native/Wasm UTF-8 encoding aborts on unpaired UTF-16 surrogates, whereas
+  // JS replaces them. Reject them first so every backend has the same result.
+  let mut index = 0
+  while index < text.length() {
+    let unit = text[index].to_int()
+    if unit >= 0xd800 && unit <= 0xdbff {
+      if index + 1 >= text.length() {
+        raise Invalid("unpaired UTF-16 surrogate")
+      }
+      let trail = text[index + 1].to_int()
+      if trail < 0xdc00 || trail > 0xdfff {
+        raise Invalid("unpaired UTF-16 surrogate")
+      }
+      index += 2
+    } else {
+      if unit >= 0xdc00 && unit <= 0xdfff {
+        raise Invalid("unpaired UTF-16 surrogate")
+      }
+      index += 1
+    }
+  }
   @utf8.encode(text)
 }
 

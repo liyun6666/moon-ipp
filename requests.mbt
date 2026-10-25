@@ -18,7 +18,7 @@ pub fn RequestContext::new(
   user~ : String = "anonymous",
   language~ : String = "en",
 ) -> RequestContext raise IppError {
-  if encode_utf8(user).length() < 1 || encode_utf8(user).length() > 255 {
+  if user.is_empty() || user.length() > 255 || encode_utf8(user).length() > 255 {
     raise Invalid("requesting user name length out of range")
   }
   if language.is_empty() || language.length() > 63 {
@@ -63,6 +63,9 @@ pub fn RequestContext::printer_attributes(
   request_id : Int32,
   requested~ : Array[String] = [],
 ) -> Message raise IppError {
+  if requested.any(name => !valid_attribute_name(name)) {
+    raise Invalid("invalid requested attribute name")
+  }
   let attributes = self.attributes()
   if !requested.is_empty() {
     attributes.push(Attribute::keywords("requested-attributes", requested))
@@ -187,8 +190,8 @@ pub fn RequestContext::send_document(
   document : Bytes,
   last~ : Bool = true,
 ) -> Message raise IppError {
-  if !valid_mime_type(format) || document.is_empty() {
-    raise Invalid("invalid document format or empty document")
+  if !valid_mime_type(format) || (document.is_empty() && !last) {
+    raise Invalid("invalid document format or empty non-final document")
   }
   let request = self.job_request(SendDocument, request_id, job_id)
   let attributes = request.groups[0].attributes

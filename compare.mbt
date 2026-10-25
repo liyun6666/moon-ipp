@@ -52,18 +52,34 @@ fn same_values(left : Array[IppValue], right : Array[IppValue]) -> Bool {
   if left.length() != right.length() {
     return false
   }
-  let used = FixedArray::make(right.length(), false)
-  for value in left {
-    let mut found = false
-    for index, candidate in right {
-      if !used[index] && candidate == value {
-        used[index] = true
-        found = true
-        break
-      }
+  // Valid wire values have a stable typed JSON key. Keep actual values in
+  // buckets as well, so even manually constructed values with colliding JSON
+  // representations retain the exact enum/collection equality semantics.
+  let remaining : Map[String, Array[IppValue]] = Map([])
+  for value in right {
+    let key = value.to_json().stringify()
+    match remaining.get(key) {
+      Some(bucket) => bucket.push(value)
+      None => remaining[key] = [value]
     }
-    if !found {
+  }
+  for value in left {
+    let key = value.to_json().stringify()
+    let bucket = match remaining.get(key) {
+      Some(bucket) => bucket
+      None => return false
+    }
+    let mut index = bucket.length() - 1
+    while index >= 0 && bucket[index] != value {
+      index -= 1
+    }
+    if index < 0 {
       return false
+    }
+    bucket[index] = bucket[bucket.length() - 1]
+    let _ = bucket.pop()
+    if bucket.is_empty() {
+      remaining.remove(key)
     }
   }
   true

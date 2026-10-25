@@ -1,0 +1,148 @@
+----
+import {
+  "moonbitlang/async@0.22.5",
+  "moonbitlang/async@0.22.5/shell",
+  "moonbitlang/async@0.22.5/fs",
+  "moonbitlang/core/json",
+}
+----
+
+///|
+fn integer_field(value : Json, name : String) -> Int32 raise {
+  match value {
+    Object(fields) =>
+      match fields.get(name) {
+        Some(Number(number, ..)) if number >= 1 &&
+          number <= 2147483647.0 &&
+          number == number.floor() => number.to_int()
+        _ => fail("missing positive integer field: " + name)
+      }
+    _ => fail("object expected")
+  }
+}
+
+///|
+async fn main {
+  let output = "interop-output/boundary-" + @async.now().to_string()
+  let spool = output + "/spool"
+  @fs.mkdir(spool, recursive=true, allow_exist=true)
+  let evidence : Array[Json] = []
+  let uri = "ipp://localhost:8632/ipp/print"
+  let cli = async fn(arguments : Array[String]) -> Json {
+    let command = ["run", "cmd/main", "--target", "native", "--"]
+    for argument in arguments {
+      command.push(argument)
+    }
+    let result = @shell.Cmd("moon", command).output(
+      timeout_ms=90000,
+      max_output_bytes=1048576,
+    )
+    evidence.push({
+      "arguments": Json::array(arguments.map(Json::string)),
+      "exit": Json::number(result.exit_code().to_double()),
+      "stdout": Json::string(result.stdout()),
+      "stderr": Json::string(result.stderr()),
+    })
+    @fs.write_file(
+      output + "/commands.json",
+      Json::array(evidence).stringify(indent=2),
+    )
+    result.check()
+    @json.parse(result.stdout(), reject_duplicate_keys=true)
+  }
+  @async.with_task_group(group => {
+    group.spawn_bg(() => {
+      @shell.Cmd(
+        "ippeveprinter",
+        [
+          "-n", "localhost", "-p", "8632", "-s", "60", "-f", "text/plain", "-d",
+          spool, "-k", "-v", "Moon IPP Boundary Test",
+        ],
+        stdout=@shell.ToFile(output + "/server.log"),
+        stderr=@shell.AppendToFile(output + "/server.log"),
+      ).run()
+    })
+    let ready = for _ in 0..<50 {
+      let result = @shell.Cmd("moon", [
+        "run", "cmd/main", "--target", "native", "--", "health", "--uri", uri, "--timeout",
+        "500",
+      ]).output(timeout_ms=15000)
+      if result.exit_code() == 0 {
+        break true
+      }
+      @async.sleep(100)
+    } nobreak {
+      false
+    }
+    assert_true(ready, msg="CUPS did not become ready")
+    let job = cli([
+      "create", "--uri", uri, "--format", "text/plain", "--name", "Close without a second document",
+    ])
+    let job_id = integer_field(job, "id")
+    let document = "Moon IPP final-empty-document interoperability test\n"
+    @fs.write_file(output + "/document.txt", document)
+    @fs.write_file(output + "/empty.txt", b"")
+    let _ = cli([
+      "send",
+      "--uri",
+      uri,
+      "--job-id",
+      job_id.to_string(),
+      "--input",
+      output + "/document.txt",
+      "--more-documents",
+    ])
+    let _ = cli([
+      "send",
+      "--uri",
+      uri,
+      "--job-id",
+      job_id.to_string(),
+      "--input",
+      output + "/empty.txt",
+    ])
+    let observations = cli([
+      "wait",
+      "--uri",
+      uri,
+      "--job-id",
+      job_id.to_string(),
+      "--interval",
+      "100",
+      "--polls",
+      "200",
+    ])
+    let last = match observations {
+      Array(values) if !values.is_empty() => values[values.length() - 1]
+      _ => fail("missing job observations")
+    }
+    match last {
+      Object(fields) =>
+        match fields.get("job") {
+          Some(Object(job_fields)) =>
+            assert_eq(job_fields.get("state"), Some(Json::string("completed")))
+          _ => fail("missing job")
+        }
+      _ => fail("missing observation")
+    }
+    let mut files = 0
+    for name in @fs.readdir(spool) {
+      let path = spool + "/" + name
+      if @fs.kind(path) == @fs.Regular {
+        files += 1
+        assert_eq(@fs.read_file(path).text(), document)
+      }
+    }
+    assert_eq(files, 1)
+    let result : Json = {
+      "result": "passed",
+      "independent_server": "CUPS ippeveprinter",
+      "empty_final_send_accepted": true,
+      "job_completed": true,
+      "received_document_files": files,
+      "document_unchanged": true,
+    }
+    @fs.write_file(output + "/result.json", result.stringify(indent=2))
+  })
+  println("CUPS final-empty-document interoperability passed: " + output)
+}

@@ -34,6 +34,8 @@ jobs:
           sudo systemctl start avahi-daemon
       - name: Exercise native client against CUPS
         run: python3 scripts/interop_cups.py
+      - name: Exercise legal empty-final-document submission against CUPS
+        run: moon run --deny-warn scripts/interop_boundaries.mbtx
       - name: Preserve interoperability evidence
         if: always()
         uses: actions/upload-artifact@v4

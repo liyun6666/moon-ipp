@@ -77,7 +77,14 @@ async test "real HTTP preserves status failures without parsing error pages" {
 ///|
 async test "real HTTP rejects missing or unrelated Content-Type" {
   for
-    media_type in [None, Some("text/plain"), Some("application/ipp-malicious")] {
+    media_type in [
+      None,
+      Some("text/plain"),
+      Some("application/ipp-malicious"),
+      Some("application/ipp;"),
+      Some("application/ipp; charset="),
+      Some("application/ipp; charset=utf-8; charset=ascii"),
+    ] {
     try exchange_with_response(200, media_type, b"body", 1024) catch {
       error => assert_true(error is @client.UnexpectedContentType(_))
     } noraise {

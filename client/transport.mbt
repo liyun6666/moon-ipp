@@ -53,15 +53,26 @@ pub impl Transport for HttpTransport with fn exchange(
   if self.authorization is Some(_) && !endpoint.secure() {
     raise @ipp.Invalid("authorization requires ipps transport")
   }
+  exchange_http(endpoint, request, maximum, self.authorization)
+}
+
+///|
+#cfg(not(target="js"))
+async fn exchange_http(
+  endpoint : @ipp.PrinterUri,
+  request : Bytes,
+  maximum : Int32,
+  authorization : String?,
+) -> Bytes {
   let scheme = if endpoint.secure() { "https" } else { "http" }
   let connection = @http.Client("\{scheme}://\{endpoint.authority()}/")
   defer connection.close()
   let headers : Map[@http.CaseInsensitiveString, String] = Map([
     (@http.CaseInsensitiveString("Content-Type"), "application/ipp"),
     (@http.CaseInsensitiveString("Accept"), "application/ipp"),
-    (@http.CaseInsensitiveString("User-Agent"), "moon-ipp/0.1.3"),
+    (@http.CaseInsensitiveString("User-Agent"), "moon-ipp/0.1.4"),
   ])
-  match self.authorization {
+  match authorization {
     Some(value) => {
       if !endpoint.secure() {
         raise @ipp.Invalid("authorization requires ipps transport")
@@ -83,7 +94,7 @@ pub impl Transport for HttpTransport with fn exchange(
     Some((media, _)) => media.trim().to_owned()
     None => content_type.trim().to_owned()
   }
-  if media_type != "application/ipp" {
+  if media_type != "application/ipp" || !@ipp.valid_mime_type(content_type) {
     raise UnexpectedContentType(content_type)
   }
   let buffer = @buffer.Buffer()

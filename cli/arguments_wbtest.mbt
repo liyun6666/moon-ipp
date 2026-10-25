@@ -23,6 +23,8 @@ test "mistyped duplicate missing and inapplicable options fail" {
       ["jobs", "--uri", "ipp://host/x", "--limit", "1", "--limit", "2"],
       ["wait", "--uri", "ipp://host/x", "--job-id", "1", "--timeout", "300001"],
       ["encode", "--input", "a.json"],
+      ["help", "--uri", "ipp://host/print"],
+      ["version", "--timeout", "10"],
     ] {
     try parse(args) catch {
       _ => ()

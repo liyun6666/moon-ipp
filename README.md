@@ -11,7 +11,7 @@ MoonBit 原生 IPP 网络打印协议库和客户端。业务系统可以查询�
 需要 MoonBit stable 2026-10-23 或更新的兼容版本。网络客户端依赖 `moonbitlang/async@0.22.5`；native 构建需要 C 编译器，Windows 异步库要求 MSVC。Windows/Linux CI 验证 native，JS 客户端通过 Node.js 测试。
 
 ```sh
-moon add liyun6666/moon-ipp@0.1.3
+moon add liyun6666/moon-ipp@0.1.4
 ```
 
 在 `moon.pkg` 中导入所需包：
@@ -120,14 +120,16 @@ python3 scripts/interop_cups.py
 
 - IPP 1.1/2.x 消息、属性组、多值、嵌套集合、常用标准值类型、未知值与二进制文档；默认上限为头部 1 MiB、文档 16 MiB、属性 4096 个、值 16384 个、集合深度 16。属性组最多为属性预算加一，防止空组膨胀；尚未支持的扩展值标签明确拒绝。
 - 八个操作：Get-Printer-Attributes、Validate-Job、Print-Job、Create-Job、Send-Document、Get-Jobs、Get-Job-Attributes、Cancel-Job。
+- 联合语法属性可含不同类型的值，例如标准纸张 keyword 与自定义纸张 name；out-of-band 仍必须是单值。Send-Document 允许空文档作为最后一次结束请求，非最后一次仍要求文档数据。
 - 份数、纸张、单双面、颜色、分辨率、质量、方向、number-up、页范围和文档格式预检；MIME 类型支持大小写及参数，比较时保留普通参数值的大小写含义；缺失能力通常警告，明确不支持则报错。
 - media-col 尺寸、四边页边距、纸盒及纸张类型；设备健康、队列摘要、能力差异和打印计划预览。
 - 有界 HTTP/HTTPS 传输、请求 ID 关联、超时和取消；同一 Client 只允许一个并发请求。Transport 可注入业务已有网络层。
+- native 和 JS 都拒绝自动重定向；JS 不携带浏览器隐式凭据。响应正文执行字节上限；HTTP 头部解析由所用网络后端负责，该正文上限不是整个 HTTP 头部的内存配额。
 - 带类型标签的 JSON 保留集合、未知值和字节；CLI `encode`、`decode`、`compare` 可离线排查。
 
 文档由上游生成，须是设备支持的格式。首版不提供文档转换、渲染器、USB 驱动、DNS-SD 自动发现、通知订阅或完整 IPP Everywhere 认证，不声称覆盖全部厂商扩展。HTTP 401/403 等明确报错；认证使用调用方设置的 `MOON_IPP_AUTHORIZATION` 环境变量并要求 `ipps://`，TLS 使用系统信任根。不要把秘密写进 URI 或日志。
 
-提交中丢失响应，或成功响应缺少可用任务编号，会抛出 `SubmissionUncertain`：设备可能已接收文档，应查询队列并核对，客户端不会自动重发。任务查询还会核对返回的 job-id，防止把其他任务的完成状态当作本次结果。终态为 completed、canceled、aborted；超出轮询次数报错。`PrintPlan` 是参数与状态预览，不保证传输成功。
+提交中丢失响应、成功响应缺少可用任务编号，或 Send-Document 返回了其他任务的编号，会抛出 `SubmissionUncertain`：设备可能已接收文档，应查询队列并核对，客户端不会自动重发。任务查询还会核对返回的 job-id，防止把其他任务的完成状态当作本次结果。终态为 completed、canceled、aborted；超出轮询次数报错。`PrintPlan` 是参数与状态预览，不保证传输成功。
 
 ## 验证与维护
 
@@ -143,8 +145,8 @@ moon fmt --check
 python3 scripts/count_source.py --minimum 4001
 ```
 
-计数只含手写 `.mbt` 非空非注释实现行，排除测试、生成接口、依赖、构建文件及 Python 测试脚本。测试覆盖字节往返、截断、非法结构、集合预算、日期、URI、参数、任务状态和失败路径。详见 [验收记录](docs/verification.md)、[AI 辅助申报草稿（须参赛者人工撰写终稿）](docs/项目申报书.md) 和 [查重记录](docs/查重记录.md)。
+计数只含手写 `.mbt` 非空非注释实现行，排除测试、生成接口、依赖、构建文件及 Python 测试脚本。测试覆盖合法及异常报文、长度极值、集合预算、日期、URI、参数、任务状态和真实 HTTP 失败路径。详见 [验收记录](docs/verification.md)、[AI 辅助申报草稿](docs/项目申报书.md) 和 [查重记录](docs/查重记录.md)。比赛的人工撰写要求适用于初审申报；如果已通过初审，无须仅因版本更新另交一份申报书。
 
 原创实现依据 [RFC 8010](https://www.rfc-editor.org/rfc/rfc8010) 和 [RFC 8011](https://www.rfc-editor.org/rfc/rfc8011)。[OpenPrinting CUPS](https://github.com/OpenPrinting/cups) 源码未被复制。依赖与许可证见 [第三方说明](THIRD_PARTY.md)。
 
-已发布 0.1.3，Windows 构建入口的 C4005 修复、成功 CI 与独立安装证据见 [0.1.3 验证记录](docs/0.1.3-验证记录.md)；完整技术复核见 [2026-10-25 报告](docs/终审复核-2026-10-25.md)。报告不代表赛事审核通过；参赛申报终稿须由本人撰写。
+本轮边界修复与验证范围见 [0.1.4 边界复核](docs/边界复核-0.1.4.md)；Windows 构建入口的 C4005 修复见 [0.1.3 验证记录](docs/0.1.3-验证记录.md)。这些是工程验证记录，不代表赛事官方验收结论。
