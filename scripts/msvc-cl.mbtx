@@ -1,0 +1,131 @@
+----
+import {
+  "moonbitlang/async@0.22.5",
+  "moonbitlang/async@0.22.5/fs",
+  "moonbitlang/async@0.22.5/shell",
+  "moonbitlang/core/env",
+}
+----
+
+///|
+let conflict : String = "#define EINVAL ERROR_INVALID_PARAMETER"
+
+///|
+async fn stage_arguments(
+  arguments : Array[String],
+) -> (Array[String], Array[String]) {
+  let prepared = arguments.copy()
+  let directories : Array[String] = []
+  for index, argument in arguments {
+    let path = argument.replace_all(old="\\", new="/")
+    if !path.to_lower().contains("moonbitlang/async") ||
+      !path.has_suffix("/internal/event_loop/fs.c") {
+      continue
+    }
+    let source = @fs.read_file(argument).text()
+    if !source.contains(conflict) {
+      continue
+    }
+    if source.split(conflict).to_array().length() != 2 {
+      fail("unexpected async EINVAL declaration layout")
+    }
+    let directory = @fs.tmpdir(prefix="moon-ipp-msvc-")
+    let target = directory + "/fs.c"
+    let fixed = source.replace_all(
+      old=conflict,
+      new="#ifdef EINVAL\n#undef EINVAL\n#endif\n" + conflict,
+    )
+    @fs.write_file(
+      target,
+      fixed +
+      "\n#if defined(_WIN32) && EINVAL != ERROR_INVALID_PARAMETER\n#error IPP adapter changed the Windows error mapping\n#endif\n",
+    )
+    directories.push(directory)
+    prepared[index] = target
+  }
+  if !directories.is_empty() {
+    prepared.insert(0, "/utf-8")
+  }
+  (prepared, directories)
+}
+
+///|
+async fn clean_staged(directories : Array[String]) -> Unit {
+  for directory in directories {
+    @fs.remove(directory + "/fs.c")
+    @fs.rmdir(directory)
+  }
+}
+
+///|
+async fn self_test(compiler : String) -> Unit {
+  let directory = @fs.tmpdir(prefix="moon-ipp-msvc-check space-")
+  let unrelated = directory + "/unrelated.c"
+  @fs.write_file(
+    unrelated, "#define IPP_TEST_MACRO 1\n#define IPP_TEST_MACRO 2\nint ipp_test(void) { return IPP_TEST_MACRO; }\n",
+  )
+  let negative = @shell.Cmd(@env.get_env_var("MOON_CC").unwrap(), [
+    "/nologo",
+    "/c",
+    "/we4005",
+    "/Fo" + directory + "/unrelated.obj",
+    unrelated,
+  ]).output()
+  assert_true(negative.exit_code() != 0)
+  assert_true((negative.stdout() + negative.stderr()).contains("C4005"))
+  let original = ".mooncakes/moonbitlang/async/src/internal/event_loop/fs.c"
+  let before = @fs.read_file(original).text()
+  let absolute = @fs.realpath(original)
+  let include_dir = @env.get_env_var("MOON_IPP_INCLUDE").unwrap()
+  let arguments = [
+    "/nologo",
+    "/c",
+    "/we4005",
+    "/I" + include_dir,
+    "/Fo" + directory + "/fixed.obj",
+    absolute,
+  ]
+  let (fixed, temporary) = stage_arguments(arguments)
+  let positive = @shell.Cmd(compiler, fixed).output()
+  clean_staged(temporary)
+  if positive.exit_code() != 0 {
+    fail("MSVC adapter probe failed: " + positive.stdout() + positive.stderr())
+  }
+  assert_false((positive.stdout() + positive.stderr()).contains("C4005"))
+  assert_eq(@fs.read_file(original).text(), before)
+  @fs.remove(unrelated)
+  @fs.remove(directory + "/fixed.obj")
+  @fs.rmdir(directory)
+  println(
+    "MSVC compatibility probes passed: conflict fixed; unrelated redefinitions remain errors",
+  )
+}
+
+///|
+async fn main {
+  let compiler = @env.get_env_var("MOON_IPP_REAL_CL").unwrap()
+  let arguments = @env.args()[1:].to_owned()
+  if arguments == ["--self-test"] {
+    self_test(compiler)
+    return
+  }
+  if arguments.get(0) == Some("--archiver") {
+    let status = @shell.Cmd(
+      @env.get_env_var("MOON_IPP_REAL_LIB").unwrap(),
+      arguments[1:].to_owned(),
+    ).status()
+    if status != 0 {
+      fail("MSVC archiver exited with code \{status}")
+    }
+    return
+  }
+  if arguments.get(0) != Some("--compiler") {
+    fail("missing MSVC driver role")
+  }
+  let (prepared, temporary) = stage_arguments(arguments[1:].to_owned())
+  let status = @shell.Cmd(compiler, prepared).status()
+  clean_staged(temporary)
+  if status != 0 {
+    fail("MSVC exited with code \{status}")
+  }
+}

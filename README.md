@@ -11,7 +11,7 @@ MoonBit 原生 IPP 网络打印协议库和客户端。业务系统可以查询�
 需要 MoonBit stable 2026-10-23 或更新的兼容版本。网络客户端依赖 `moonbitlang/async@0.22.5`；native 构建需要 C 编译器，Windows 异步库要求 MSVC。Windows/Linux CI 验证 native，JS 客户端通过 Node.js 测试。
 
 ```sh
-moon add liyun6666/moon-ipp@0.1.2
+moon add liyun6666/moon-ipp@0.1.3
 ```
 
 在 `moon.pkg` 中导入所需包：
@@ -41,6 +41,8 @@ moon run scripts/verify.mbtx --run capabilities --uri ipp://localhost:8631/ipp/p
 ```
 
 `--native-only` 只检查、测试和构建 native；默认验证 wasm-gc、JS、native 与格式。`--run` 将后续参数交给 native CLI。也可以在已经配置好 MSVC 的开发者终端直接使用 CLI。
+
+Windows 验证入口提供针对 async 0.22.5 的 C 编译兼容处理：在临时副本中先清除冲突的 EINVAL 宏，再保留上游的 Windows 错误码映射；原始依赖文件保持不变。C4005 在此入口中按编译错误处理，并检查无关宏冲突仍会失败。其他项目直接构建未修复的上游包仍可能收到原告警；这是本项目的构建兼容层，不是上游已发布新版本。
 
 ## 库 API
 

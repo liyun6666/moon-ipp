@@ -54,8 +54,68 @@ async fn native_environment() -> Map[String, String] {
     fail("Microsoft's developer environment did not initialize successfully")
   }
   environment.remove("__MOON_MSVC_EXIT__")
-  environment["CC"] = "cl"
-  environment["MOON_CC"] = "cl"
+  let tools : Map[String, String] = Map([])
+  for executable in ["cl.exe", "lib.exe", "moon.exe"] {
+    let found = @shell.Cmd("where.exe", [executable], env=environment).output()
+    found.check()
+    tools[executable] = found.stdout().split("\n").to_array()[0]
+      .trim()
+      .to_owned()
+  }
+  let project = @env.current_dir().unwrap()
+  // Bump this revision when the adapter contract changes to invalidate native caches.
+  let cache = "_build/msvc-compat/v1"
+  let bridge = project + "/" + cache + "/cl.exe"
+  let archiver = project + "/" + cache + "/lib.exe"
+  @fs.mkdir(cache, recursive=true, allow_exist=true)
+  let launcher = @fs.read_file("scripts/msvc-launcher.c").text()
+  let stamp = cache + "/launcher-source.txt"
+  if !@fs.exists(bridge) ||
+    !@fs.exists(archiver) ||
+    !@fs.exists(stamp) ||
+    @fs.read_file(stamp).text() != launcher {
+    @shell.Cmd(
+      tools["cl.exe"],
+      [
+        "/nologo",
+        "/W4",
+        "/WX",
+        "/O2",
+        "scripts/msvc-launcher.c",
+        "/Fo" + cache + "/launcher.obj",
+        "/Fe" + bridge,
+      ],
+      env=environment,
+    ).run()
+    @shell.Cmd(
+      tools["cl.exe"],
+      [
+        "/nologo",
+        "/W4",
+        "/WX",
+        "/O2",
+        "/DMOON_IPP_ARCHIVER",
+        "scripts/msvc-launcher.c",
+        "/Fo" + cache + "/archiver.obj",
+        "/Fe" + archiver,
+      ],
+      env=environment,
+    ).run()
+    @fs.write_file(stamp, launcher)
+  }
+  environment["MOON_IPP_REAL_CL"] = tools["cl.exe"]
+  environment["MOON_IPP_REAL_LIB"] = tools["lib.exe"]
+  environment["MOON_IPP_MOON"] = tools["moon.exe"]
+  environment["MOON_IPP_CL_SCRIPT"] = project + "/scripts/msvc-cl.mbtx"
+  let moon_home = @env.get_env_var("MOON_HOME").unwrap_or(
+    @env.get_env_var("USERPROFILE").unwrap() + "/.moon",
+  )
+  environment["MOON_IPP_INCLUDE"] = moon_home + "/include"
+  environment["MOON_AR"] = archiver
+  environment["VSLANG"] = "1033"
+  environment["CL"] = environment.get("CL").unwrap_or("") + " /we4005"
+  environment["CC"] = bridge
+  environment["MOON_CC"] = bridge
   environment
 }
 
@@ -88,10 +148,18 @@ async fn main {
       ["test", "--deny-warn"],
       ["build", "--deny-warn"],
       ["fmt", "--check"],
-      ["fmt", "scripts/verify.mbtx", "--check"],
+      ["fmt", "scripts/verify.mbtx", "scripts/msvc-cl.mbtx", "--check"],
     ]
   }
   for command in commands {
+    if command == ["test", "--deny-warn"] &&
+      environment.contains("MOON_IPP_REAL_CL") {
+      @shell.Cmd(
+        "moon",
+        ["run", "--deny-warn", "scripts/msvc-cl.mbtx", "--self-test"],
+        env=environment,
+      ).run()
+    }
     println("moon " + command.join(" "))
     @shell.Cmd("moon", command, env=environment).run()
   }

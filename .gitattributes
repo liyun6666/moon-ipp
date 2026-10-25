@@ -8,4 +8,5 @@ moon.pkg text eol=lf
 *.yml text eol=lf
 *.json text eol=lf
 *.py text eol=lf
+*.c text eol=lf
 *.pdf binary

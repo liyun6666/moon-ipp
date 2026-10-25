@@ -59,7 +59,7 @@ pub impl Transport for HttpTransport with fn exchange(
   let headers : Map[@http.CaseInsensitiveString, String] = Map([
     (@http.CaseInsensitiveString("Content-Type"), "application/ipp"),
     (@http.CaseInsensitiveString("Accept"), "application/ipp"),
-    (@http.CaseInsensitiveString("User-Agent"), "moon-ipp/0.1.2"),
+    (@http.CaseInsensitiveString("User-Agent"), "moon-ipp/0.1.3"),
   ])
   match self.authorization {
     Some(value) => {
