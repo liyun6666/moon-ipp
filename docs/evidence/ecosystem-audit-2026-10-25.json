@@ -1,0 +1,175 @@
+{
+  "checked_on": "2026-10-25",
+  "modules": 3276,
+  "candidates": [
+    {
+      "name": "bobzhang/cfront",
+      "version": "0.4.0",
+      "description": "C syntax suite for meta-programming: parse C to an AST, build or transform it from MoonBit, and print it back as C another compiler accepts."
+    },
+    {
+      "name": "bobzhang/easy_format",
+      "version": "0.1.0",
+      "description": "A port of OCaml's easy-format: pretty-printing of trees made of atoms, lists and labels, with styles"
+    },
+    {
+      "name": "bobzhang/format",
+      "version": "0.1.1",
+      "description": "A faithful port of OCaml's Format module: pretty-printing boxes, break hints, tabulations, tags and printf-like format strings"
+    },
+    {
+      "name": "brickfrog/pippa",
+      "version": "0.1.0",
+      "description": "A terminal UI framework for MoonBit, inspired by bubbletea (Go) and Elm architecture. Provides a Model-Update-View pattern with typed messages, ANSI rendering, and composable components."
+    },
+    {
+      "name": "bzy-debug/string_zipper",
+      "version": "0.1.3",
+      "description": "A production-ready text editing data structure with efficient cursor navigation and proper Unicode handling"
+    },
+    {
+      "name": "CAIMEOX/zipper",
+      "version": "0.1.0",
+      "description": "The zipper data structure"
+    },
+    {
+      "name": "dowdiness/incr",
+      "version": "0.15.1",
+      "description": "Salsa-inspired incremental recomputation library with automatic dependency tracking, backdating, and durability-based verification skipping"
+    },
+    {
+      "name": "hua1104/foldledger",
+      "version": "0.1.0",
+      "description": "MoonBit booklet imposition plans with signature boundaries, blank-page accounting and SVG previews."
+    },
+    {
+      "name": "hustcer/tabular",
+      "version": "0.6.0",
+      "description": "A MoonBit library for pretty-printing tables in terminal. Ported from Rust tabled."
+    },
+    {
+      "name": "illusory0x0/prettyprinter",
+      "version": "0.1.1",
+      "description": "A pretty printer library for MoonBit using immutable deque implementation for efficient document layout and formatting"
+    },
+    {
+      "name": "illusory0x0/printer",
+      "version": "0.1.1",
+      "description": "A MoonBit AST printer for string serialization of Abstract Syntax Tree nodes from moonbitlang/parser/syntax, designed for code generation and AST visualization workflows."
+    },
+    {
+      "name": "liyun6666/moon-ipp",
+      "version": "0.1.1",
+      "description": "MoonBit-native IPP codec, capability validation and network printing client"
+    },
+    {
+      "name": "maria/json_parser",
+      "version": "0.1.1",
+      "description": "Fast and compliant JSON parser and serializer for MoonBit supporting the full JSON specification with strict validation, unicode escapes, pretty printing, and detailed error reporting"
+    },
+    {
+      "name": "marianoguerra/css",
+      "version": "0.1.2",
+      "description": "A semantic CSS syntax tree for MoonBit: a tolerant parser, a printer with pretty, compact and minified modes, and structured diagnostics"
+    },
+    {
+      "name": "marianoguerra/html",
+      "version": "0.1.1",
+      "description": "A semantic markup tree for MoonBit: HTML, SVG and MathML, with a tolerant parser, a printer with pretty, compact and minified modes, and structured diagnostics"
+    },
+    {
+      "name": "marianoguerra/pretty-fast-pretty-printer",
+      "version": "0.2.3",
+      "description": "A linear time pretty printing library, ported from brownplt/pretty-fast-pretty-printer"
+    },
+    {
+      "name": "marianoguerra/shrubbery",
+      "version": "0.1.2",
+      "description": "Shrubbery notation for MoonBit: parser, source-faithful and reformatting printers, and structured diagnostics"
+    },
+    {
+      "name": "mik1e80/stlkit",
+      "version": "0.1.4",
+      "description": "MoonBit 实现的 STL/OBJ/3MF/PLY 网格工具链：解析、打印前复核、修复、分析与流式扫描"
+    },
+    {
+      "name": "mizchi/ast_printer",
+      "version": "0.2.4",
+      "description": "A pretty printer for MoonBit AST - converts parsed AST back to source code"
+    },
+    {
+      "name": "mizchi/ripple",
+      "version": "0.1.4",
+      "description": "Incremental computation library for MoonBit - changes ripple through the dependency graph"
+    },
+    {
+      "name": "moonbit-community/prettyprinter",
+      "version": "0.4.11",
+      "description": "pretty printer for moonbit"
+    },
+    {
+      "name": "moonbitstack/moonsver",
+      "version": "0.1.0",
+      "description": "Semantic Versioning 2.0.0: parsing, printing, precedence, bumping and version ranges, with the range grammar of npm, Cargo, Ruby or the strict spec as a parameter."
+    },
+    {
+      "name": "moonrockz/diagrams-mermaid",
+      "version": "0.1.0",
+      "description": "Mermaid for diagrams.mbt: lossless CST, parser, AST, printer and conversion to diagram models"
+    },
+    {
+      "name": "moonrockz/pretty",
+      "version": "0.3.0",
+      "description": "Wadler-style pretty printer for MoonBit: documents, groups and layout that fits a line width"
+    },
+    {
+      "name": "Novanke/quireloom",
+      "version": "0.2.0",
+      "description": "Deterministic booklet imposition and fold-order verification in pure MoonBit"
+    },
+    {
+      "name": "riantr/moonbit_labeler_sample_data",
+      "version": "0.1.1",
+      "description": "Sample annotation dataset for MoonBit Labeler test fixtures: six scanned images under Image@skin and one annotation under Label@skin. Pulled by CI so the dataset-dependent tests run without shipping per-deployment data in the repository."
+    },
+    {
+      "name": "tonyfettes/json_parser",
+      "version": "0.1.0",
+      "description": "A complete JSON parser for MoonBit with full spec compliance, error handling, and pretty-printing support"
+    },
+    {
+      "name": "wedarp/moonbit-abc",
+      "version": "0.1.6",
+      "description": "A source-aware ABC notation parser, validator, AST JSON serializer, and pretty printer."
+    },
+    {
+      "name": "Yoorkin/prettyprinter",
+      "version": "0.4.10",
+      "description": "pretty printer for moonbit"
+    },
+    {
+      "name": "YumeXi/format",
+      "version": "0.3.11",
+      "description": "A formatting library for MoonBit"
+    }
+  ],
+  "github": [
+    {
+      "query": "ipp language:MoonBit",
+      "total_count": 1,
+      "names": [
+        "liyun6666/moon-ipp"
+      ]
+    },
+    {
+      "query": "cups language:MoonBit",
+      "total_count": 0,
+      "names": []
+    },
+    {
+      "query": "\"internet printing\" moonbit in:name,description,readme",
+      "total_count": 0,
+      "names": []
+    }
+  ]
+}

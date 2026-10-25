@@ -1,0 +1,29 @@
+{
+  "implementation_lines": 4594,
+  "files": {
+    "binary.mbt": 123,
+    "capabilities.mbt": 292,
+    "cli/arguments.mbt": 351,
+    "client/client.mbt": 218,
+    "client/transport.mbt": 89,
+    "cmd/main/main.mbt": 189,
+    "codec.mbt": 176,
+    "compare.mbt": 120,
+    "extensions.mbt": 17,
+    "health.mbt": 166,
+    "jobs.mbt": 218,
+    "json.mbt": 336,
+    "media.mbt": 292,
+    "mime.mbt": 122,
+    "model.mbt": 237,
+    "options.mbt": 219,
+    "planning.mbt": 195,
+    "registry.mbt": 135,
+    "requests.mbt": 168,
+    "stream.mbt": 85,
+    "types.mbt": 57,
+    "uri.mbt": 239,
+    "validation.mbt": 188,
+    "value_codec.mbt": 362
+  }
+}

@@ -2,6 +2,14 @@
 
 本页记录可复现验证方法；GitHub Actions 保存每次运行的实际结果。
 
+## 0.1.2 实测结果
+
+2026-10-25，发布代码 `bfdb7c0fc13a39120fc18d0280840fc9d160abce` 的 [CI 40167374982](https://github.com/liyun6666/moon-ipp/actions/runs/40167374982) 两个任务全部成功：Windows/Linux 均为 wasm-gc 55/55、JS 69/69、native 74/74；严格检查、构建、格式通过，Linux 独立 CUPS 及大文档验收通过。本机也已安装 MSVC 并完成 native 验证。
+
+实现行数 4,594；新增 5,000 组固定种子畸形报文及真实 HTTP 断流测试。工具链对齐 2026-10-23 stable，async 升级为 0.22.5。`moon info` 的接口变更仅为 Int32 名称规范化；归一化后根库、client、cli 接口一致。
+
+发布返回 HTTP 200；注册表确认 0.1.2、未撤回，独立消费测试 1/1 通过，下载包全部 37 个 MoonBit 源文件与发布代码一致。摘要见 [CUPS 结果](evidence/cups-result-0.1.2.json)、[发布核验](evidence/release-verification-0.1.2.json)，完整结论与已知上游告警见 [新版复核报告](终审复核-2026-10-25.md)。
+
 ## 0.1.0 实测结果
 
 测试日期：2026-10-05。发布源码提交：`6c55fad1050271314e8d8b83709c137a18a9ef2f`。

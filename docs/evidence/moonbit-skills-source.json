@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/moonbitlang/skills",
+  "branch": "master",
+  "commit": "8b9f1bad14bc62560dbe3537855379e561a4e066",
+  "checked_on": "2026-10-25",
+  "installed_skills": [
+    "moonbit-agent-guide", "moonbit-orientation", "moonbit-refactoring",
+    "moonbit-extract-spec-test", "moonbit-spec-test-development", "moonbit-proof",
+    "moonbit-c-binding", "make-moonbit-c-bindings", "ocaml2moonbit-migration"
+  ]
+}

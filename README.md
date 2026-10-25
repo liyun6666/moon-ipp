@@ -32,7 +32,7 @@ moon update
 moon run cmd/main --target native -- help
 ```
 
-Windows 可安装 Visual Studio C++ Build Tools，然后由 MoonBit 脚本自动发现并初始化 MSVC；已有 MinGW/GCC 时也不需要修改系统 PATH：
+Windows 可安装 Visual Studio C++ Build Tools 及 Windows SDK，然后由 MoonBit 脚本自动发现并初始化 MSVC；已有 MinGW/GCC 时也不需要修改系统 PATH：
 
 ```sh
 moon run scripts/verify.mbtx
@@ -145,4 +145,4 @@ python3 scripts/count_source.py --minimum 4001
 
 原创实现依据 [RFC 8010](https://www.rfc-editor.org/rfc/rfc8010) 和 [RFC 8011](https://www.rfc-editor.org/rfc/rfc8011)。[OpenPrinting CUPS](https://github.com/OpenPrinting/cups) 源码未被复制。依赖与许可证见 [第三方说明](THIRD_PARTY.md)。
 
-已完成工程验收并发布 0.1.1，证据与申报资格待确认项见 [终审自查报告](docs/终审自查报告.md)。报告不代表赛事审核通过；参赛申报终稿须由本人撰写。
+已完成 Windows/Linux 工程复核并发布 0.1.2，证据、验证命令及申报资格待确认项见 [2026-10-25 复核报告](docs/终审复核-2026-10-25.md)。报告不代表赛事审核通过；参赛申报终稿须由本人撰写。
