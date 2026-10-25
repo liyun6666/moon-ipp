@@ -22,8 +22,21 @@ fn validate_string_value(tag : Int32, text : String) -> Unit raise IppError {
   if tag == 0x49 && !valid_mime_type(text) {
     raise Invalid("invalid MIME media type")
   }
-  if tag == 0x44 && !valid_attribute_name(text) {
-    raise Invalid("invalid keyword syntax")
+  if tag == 0x44 {
+    // Registered keyword values include exceptions to the attribute-name
+    // grammar, notably ipp-versions-supported's "1.1" and raster "sRGB_8".
+    // Preserve their token bytes; option-specific readers enforce meanings.
+    for char in text {
+      let n = char.to_int()
+      if !((n >= 97 && n <= 122) ||
+        (n >= 65 && n <= 90) ||
+        (n >= 48 && n <= 57) ||
+        n == 45 ||
+        n == 95 ||
+        n == 46) {
+        raise Invalid("invalid keyword token")
+      }
+    }
   }
 }
 

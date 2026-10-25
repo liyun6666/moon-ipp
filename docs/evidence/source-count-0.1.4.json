@@ -1,5 +1,5 @@
 {
-  "implementation_lines": 4794,
+  "implementation_lines": 4804,
   "files": {
     "binary.mbt": 148,
     "capabilities.mbt": 292,
@@ -25,6 +25,6 @@
     "types.mbt": 57,
     "uri.mbt": 239,
     "validation.mbt": 206,
-    "value_codec.mbt": 385
+    "value_codec.mbt": 395
   }
 }

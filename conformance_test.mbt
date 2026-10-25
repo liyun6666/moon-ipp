@@ -78,11 +78,11 @@ test "octetString MAX accepts 1023 and rejects 1024 bytes in wire and JSON" {
 }
 
 ///|
-test "attribute names and keywords require a lowercase letter first" {
+test "attribute names require lowercase initials while keyword values reject delimiters" {
   for name in ["1-name", "-name", "_name", ".name", "UPPER"] {
     assert_false(@lib.valid_attribute_name(name))
   }
-  for value in ["Upper", "a b", "1-name", "-name", "a/b"] {
+  for value in ["a b", "a/b", "a;b", "a\tb", "a@b"] {
     try @lib.encode(packet(@lib.Keyword(value))) catch {
       error => assert_true(error is @lib.Invalid(_))
     } noraise {
@@ -93,6 +93,20 @@ test "attribute names and keywords require a lowercase letter first" {
     @lib.decode(@lib.encode(packet(@lib.Keyword("a-1_b.c")))),
     packet(@lib.Keyword("a-1_b.c")),
   )
+}
+
+///|
+test "registered version and raster keywords are not mistaken for attribute names" {
+  let values = [
+    @lib.Keyword("1.1"),
+    @lib.Keyword("2.0"),
+    @lib.Keyword("sRGB_8"),
+  ]
+  for value in values {
+    let message = packet(value)
+    assert_eq(@lib.decode(@lib.encode(message)), message)
+    assert_eq(@lib.message_from_json(message.to_json()), message)
+  }
 }
 
 ///|
