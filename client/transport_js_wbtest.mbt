@@ -29,7 +29,21 @@ extern "js" fn start_redirect_probe() -> @js_async.Promise[RedirectProbe] =
   #|         const headers = { 'Content-Type': media };
   #|         if (req.url === '/short') headers['Content-Length'] = '32';
   #|         res.writeHead(req.url === '/forbidden' ? 403 : 200, headers);
-  #|         res.end(req.url === '/large' ? Buffer.alloc(16384, 120) : Buffer.from([2, 0, 0, 0, 0, 0, 0, 1, 3]));
+  #|         let body = req.url === '/large' ? Buffer.alloc(16384, 120) : Buffer.from([2, 0, 0, 0, 0, 0, 0, 1, 3]);
+  #|         if (req.url === '/client') {
+  #|           const attribute = (tag, name, value) => {
+  #|             const n = Buffer.from(name), v = Buffer.from(value), a = Buffer.alloc(5 + n.length + v.length);
+  #|             a[0] = tag; a.writeInt16BE(n.length, 1); n.copy(a, 3);
+  #|             a.writeInt16BE(v.length, 3 + n.length); v.copy(a, 5 + n.length); return a;
+  #|           };
+  #|           const header = Buffer.from([2, 0, 0, 0, 0, 0, 0, 1, 1]);
+  #|           header.writeInt32BE(Buffer.concat(chunks).readInt32BE(4), 4);
+  #|           body = Buffer.concat([header,
+  #|             attribute(0x47, 'attributes-charset', 'utf-8'),
+  #|             attribute(0x48, 'attributes-natural-language', 'en'), Buffer.from([4]),
+  #|             attribute(0x42, 'printer-name', 'JS loopback'), Buffer.from([3])]);
+  #|         }
+  #|         res.end(body);
   #|         if (req.url === '/short') res.socket.end();
   #|       }
   #|     });
@@ -128,18 +142,35 @@ async test "JS HTTP refuses a truncated Content-Length response" {
   let probe = start_redirect_probe().wait()
   defer probe.close()
   try
-    @async.with_timeout(3000, () => {
-      HttpTransport::new().exchange(
-        @ipp.PrinterUri::parse(probe.uri("/short")),
-        b"",
-        1024,
-      )
-    })
+    @async.with_timeout(
+      3000,
+      () => {
+        HttpTransport::new().exchange(
+          @ipp.PrinterUri::parse(probe.uri("/short")),
+          b"",
+          1024,
+        )
+      },
+      error=@ipp.Invalid("HTTP probe timeout"),
+    )
   catch {
-    _ => ()
+    @ipp.Invalid("HTTP probe timeout") =>
+      fail("truncated response hung until timeout")
+    _ => assert_eq(probe.requests(), 1)
   } noraise {
     _ => fail("truncated response accepted")
   }
+}
+
+///|
+async test "JS client validates an independently encoded real HTTP response" {
+  let probe = start_redirect_probe().wait()
+  defer probe.close()
+  let client = Client::new(probe.uri("/client"), HttpTransport::new())
+  let capabilities = client.capabilities()
+  assert_eq(capabilities.name(), "JS loopback")
+  assert_eq(probe.requests(), 1)
+  assert_false(client.busy)
 }
 
 ///|
