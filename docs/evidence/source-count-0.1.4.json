@@ -1,10 +1,10 @@
 {
-  "implementation_lines": 4804,
+  "implementation_lines": 4806,
   "files": {
     "binary.mbt": 148,
     "capabilities.mbt": 292,
     "cli/arguments.mbt": 354,
-    "client/client.mbt": 225,
+    "client/client.mbt": 227,
     "client/transport.mbt": 98,
     "client/transport_js.mbt": 63,
     "cmd/main/main.mbt": 189,

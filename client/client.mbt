@@ -170,11 +170,17 @@ pub async fn Client::send_document(
       last~,
     ),
   )
-  let accepted = accepted_job(response)
-  if accepted.id != job_id {
-    raise SubmissionUncertain(
-      "printer accepted Send-Document but returned a different job-id; query the original job before sending again",
-    )
+  // CUPS can acknowledge an empty closing request without another job group.
+  // Its success status and request-id are already correlated by exchange.
+  // Actual document submissions and any returned job group still need a
+  // usable identity matching the known target.
+  if !document.is_empty() || response.groups.any(group => group.tag == 2) {
+    let accepted = accepted_job(response)
+    if accepted.id != job_id {
+      raise SubmissionUncertain(
+        "printer accepted Send-Document but returned a different job-id; query the original job before sending again",
+      )
+    }
   }
   response
 }

@@ -7,6 +7,7 @@ priv struct StubTransport {
   reject_print : Bool
   wrong_job_id : Bool
   omit_job_id : Bool
+  omit_job_group : Bool
 }
 
 ///|
@@ -45,10 +46,13 @@ impl Transport for StubTransport with fn exchange(
       ]),
     )
   }
-  if request.code == 2 ||
-    request.code == 9 ||
-    request.code == 5 ||
-    request.code == 6 {
+  if (
+      request.code == 2 ||
+      request.code == 9 ||
+      request.code == 5 ||
+      request.code == 6
+    ) &&
+    !self.omit_job_group {
     let attributes = [@ipp.Attribute::new("job-state", @ipp.Enumeration(9))]
     if !self.omit_job_id {
       attributes.push(
@@ -75,6 +79,7 @@ fn stub() -> StubTransport {
     reject_print: false,
     wrong_job_id: false,
     omit_job_id: false,
+    omit_job_group: false,
   }
 }
 
@@ -317,6 +322,17 @@ async test "empty final document is sent once and preserves the job identity" {
     _ => fail("empty non-final request sent")
   }
   assert_eq(transport.requests.length(), 1)
+}
+
+///|
+async test "CUPS empty final acknowledgement may omit a repeated job group" {
+  let transport = StubTransport::{ ..stub(), omit_job_group: true, }
+  let client = Client::new("ipp://localhost/ipp/print", transport)
+  let response = client.send_document(27, "application/pdf", b"", last=true)
+  assert_eq(response.code, 0)
+  assert_true(response.find_group(2) is None)
+  assert_eq(transport.requests.length(), 1)
+  assert_false(client.busy)
 }
 
 ///|
