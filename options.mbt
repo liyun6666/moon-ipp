@@ -104,10 +104,12 @@ pub fn JobOptions::validate(self : JobOptions) -> Unit raise IppError {
     raise Invalid("copies must be positive")
   }
   match self.media {
-    Some(media) =>
-      if !valid_attribute_name(media) {
-        raise Invalid("invalid media keyword")
+    Some(media) => {
+      if media.is_empty() {
+        raise Invalid("media name must not be empty")
       }
+      validate_string_value(0x42, media)
+    }
     None => ()
   }
   match self.color_mode {
@@ -160,7 +162,17 @@ pub fn JobOptions::validate(self : JobOptions) -> Unit raise IppError {
 pub fn JobOptions::attributes(self : JobOptions) -> Array[Attribute] {
   let attributes = [Attribute::new("copies", Integer(self.copies))]
   match self.media {
-    Some(media) => attributes.push(Attribute::new("media", Keyword(media)))
+    Some(media) =>
+      attributes.push(
+        Attribute::new(
+          "media",
+          if valid_attribute_name(media) {
+            Keyword(media)
+          } else {
+            Name(media)
+          },
+        ),
+      )
     None => ()
   }
   match self.sides {

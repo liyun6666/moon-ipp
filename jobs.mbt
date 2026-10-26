@@ -96,6 +96,7 @@ pub fn Job::from_group(group : Group) -> Job raise IppError {
     None => raise Protocol("job group has no positive job-id")
   }
   let reasons = match group.find("job-state-reasons") {
+    Some({ values: [OutOfBand(0x12 | 0x13)], .. }) => []
     Some(attribute) =>
       attribute.values.map(value => {
         match value {
@@ -109,6 +110,7 @@ pub fn Job::from_group(group : Group) -> Job raise IppError {
     Some(attribute) =>
       match attribute.values {
         [Enumeration(code)] if code > 0 => Some(job_state_from_code(code))
+        [OutOfBand(0x12 | 0x13)] => None
         _ => raise Protocol("job-state requires one enumeration value")
       }
     None => None
@@ -117,6 +119,7 @@ pub fn Job::from_group(group : Group) -> Job raise IppError {
     Some(attribute) =>
       match attribute.values {
         [Integer(count)] if count >= 0 => Some(count)
+        [OutOfBand(0x12 | 0x13)] => None
         _ =>
           raise Protocol(
             "job-impressions-completed requires one nonnegative integer",
@@ -146,6 +149,7 @@ fn job_optional_string(
     None => None
     Some(attribute) =>
       match attribute.values {
+        [OutOfBand(0x12 | 0x13)] => None
         [value] if value.tag() == tag ||
           (tag == 0x42 && value.tag() == 0x36) ||
           (tag == 0x41 && value.tag() == 0x35) => value.as_string()

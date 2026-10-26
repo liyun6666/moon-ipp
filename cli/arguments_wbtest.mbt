@@ -46,3 +46,19 @@ test "offline and queue commands retain their own arguments" {
   assert_eq(parse(["decode", "--input", "dump.ipp"]).uri, None)
   assert_eq(parse([]).command, Help)
 }
+
+///|
+test "print options accept advertised human-readable custom stock names" {
+  let arguments = parse([
+    "print", "--uri", "ipp://localhost/ipp/print", "--input", "report.pdf", "--media",
+    "办公室专用 A4",
+  ])
+  assert_eq(arguments.options.media, Some("办公室专用 A4"))
+  let request = @ipp.RequestContext::new(arguments.uri.unwrap()).print_job(
+    1,
+    arguments.options,
+    b"pdf",
+  )
+  @ipp.validate_request(request)
+  assert_eq(@ipp.decode(@ipp.encode(request)), request)
+}

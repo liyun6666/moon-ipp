@@ -11,7 +11,7 @@ MoonBit 原生 IPP 网络打印协议库和客户端。业务系统可以查询�
 需要 MoonBit stable 2026-10-23 或更新的兼容版本。网络客户端依赖 `moonbitlang/async@0.22.5`；native 构建需要 C 编译器，Windows 异步库要求 MSVC。Windows/Linux CI 验证 native，JS 客户端通过 Node.js 测试。
 
 ```sh
-moon add liyun6666/moon-ipp@0.1.4
+moon add liyun6666/moon-ipp@0.1.5
 ```
 
 在 `moon.pkg` 中导入所需包：
@@ -121,8 +121,10 @@ python3 scripts/interop_cups.py
 - IPP 1.1/2.x 消息、属性组、多值、嵌套集合、常用标准值类型、未知值与二进制文档；默认上限为头部 1 MiB、文档 16 MiB、属性 4096 个、值 16384 个、集合深度 16。属性组最多为属性预算加一，防止空组膨胀；尚未支持的扩展值标签明确拒绝。
 - 八个操作：Get-Printer-Attributes、Validate-Job、Print-Job、Create-Job、Send-Document、Get-Jobs、Get-Job-Attributes、Cancel-Job。
 - 联合语法属性可含不同类型的值，例如标准纸张 keyword 与自定义纸张 name；out-of-band 仍必须是单值。Send-Document 允许空文档作为最后一次结束请求，非最后一次仍要求文档数据。
+- 自定义纸张名称可从设备默认值或 CLI `--media "办公室专用 A4"` 选择，按 name 语法发送；份数等参数仍依据设备能力预检。任务的可选未知字段保留为空，必需任务编号不能省略。
 - 份数、纸张、单双面、颜色、分辨率、质量、方向、number-up、页范围和文档格式预检；MIME 类型支持大小写及参数，比较时保留普通参数值的大小写含义；缺失能力通常警告，明确不支持则报错。
 - media-col 尺寸、四边页边距、纸盒及纸张类型；设备健康、队列摘要、能力差异和打印计划预览。
+- 健康检查对冲突值、错误类型和负队列计数给出错误诊断；unknown/no-value 不会被当作设备就绪或明确不支持。
 - 有界 HTTP/HTTPS 传输、请求 ID 关联、超时和取消；同一 Client 只允许一个并发请求。Transport 可注入业务已有网络层。
 - native 和 JS 都拒绝自动重定向；JS 不携带浏览器隐式凭据。响应正文执行字节上限；HTTP 头部解析由所用网络后端负责，该正文上限不是整个 HTTP 头部的内存配额。
 - 带类型标签的 JSON 保留集合、未知值和字节；CLI `encode`、`decode`、`compare` 可离线排查。

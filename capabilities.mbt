@@ -35,6 +35,11 @@ pub extend Capabilities with Eq::{equal, not_equal}
 pub extend Capabilities with @debug.Debug::{to_repr}
 
 ///|
+fn capability_unavailable(attribute : Attribute) -> Bool {
+  attribute.values is [OutOfBand(0x12 | 0x13)]
+}
+
+///|
 pub fn Capabilities::from_response(
   response : Message,
 ) -> Capabilities raise IppError {
@@ -49,6 +54,10 @@ pub fn Capabilities::from_response(
     None => raise Protocol("response has no printer attributes")
   }
   validate_attribute_set(printer.attributes)
+  let issues = printer_attribute_issues(printer)
+  if !issues.is_empty() {
+    raise Protocol(issues[0].message)
+  }
   { printer, }
 }
 
@@ -84,7 +93,10 @@ pub fn Capabilities::name(self : Capabilities) -> String {
 
 ///|
 pub fn Capabilities::accepting_jobs(self : Capabilities) -> Bool? {
-  self.printer.get_bool("printer-is-accepting-jobs")
+  match self.printer.find("printer-is-accepting-jobs") {
+    Some({ values: [Boolean(value)], .. }) => Some(value)
+    _ => None
+  }
 }
 
 ///|
@@ -93,6 +105,7 @@ pub fn Capabilities::supports_operation(
   operation : Operation,
 ) -> Bool? {
   match self.printer.find("operations-supported") {
+    Some(attribute) if capability_unavailable(attribute) => None
     Some(_) =>
       Some(self.integers("operations-supported").contains(operation.code()))
     None => None
@@ -141,7 +154,7 @@ fn Capabilities::check_string(
   requested : String,
 ) -> Unit {
   match self.printer.find(supported_name) {
-    None =>
+    None | Some({ values: [OutOfBand(0x12 | 0x13)], .. }) =>
       diagnostics.push(
         diagnostic(
           Warning,
@@ -175,7 +188,7 @@ fn Capabilities::check_integer(
   requested : Int32,
 ) -> Unit {
   match self.printer.find(supported_name) {
-    None =>
+    None | Some({ values: [OutOfBand(0x12 | 0x13)], .. }) =>
       diagnostics.push(
         diagnostic(
           Warning,
@@ -208,6 +221,10 @@ pub fn Capabilities::validate_options(
 ) -> Array[Diagnostic] raise IppError {
   options.validate()
   validate_attribute_set(self.printer.attributes)
+  let health_issues = printer_attribute_issues(self.printer)
+  if !health_issues.is_empty() {
+    raise Protocol(health_issues[0].message)
+  }
   if document_bytes < 0 {
     raise Invalid("negative document byte count")
   }
@@ -278,7 +295,7 @@ pub fn Capabilities::validate_options(
   match options.resolution {
     Some(resolution) =>
       match self.printer.find("printer-resolution-supported") {
-        None =>
+        None | Some({ values: [OutOfBand(0x12 | 0x13)], .. }) =>
           diagnostics.push(
             diagnostic(
               Warning,

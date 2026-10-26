@@ -46,14 +46,67 @@ pub(all) struct PrinterHealth {
 pub extend PrinterHealth with @debug.Debug::{to_repr}
 
 ///|
+// Health is intentionally non-throwing. Malformed status is reported as an
+// error diagnostic rather than selecting one of several conflicting values.
+fn printer_attribute_issues(printer : Group) -> Array[Diagnostic] {
+  let issues : Array[Diagnostic] = []
+  validate_attribute_set(printer.attributes) catch {
+    _ =>
+      issues.push({
+        severity: Error,
+        attribute: "printer-attributes",
+        message: "invalid or conflicting printer attributes",
+      })
+  }
+  if printer.tag != 4 {
+    issues.push({
+      severity: Error,
+      attribute: "printer-attributes",
+      message: "expected printer attribute group",
+    })
+  }
+  for attribute in printer.attributes {
+    let valid = match attribute.values {
+      [OutOfBand(0x12 | 0x13)] => true
+      values =>
+        match attribute.name {
+          "printer-is-accepting-jobs" => values is [Boolean(_)]
+          "printer-state" => values is [Enumeration(code)] && code > 0
+          "queued-job-count" => values is [Integer(count)] && count >= 0
+          "operations-supported" =>
+            !values.is_empty() &&
+            values.all(value => value is Enumeration(code) && code > 0)
+          "document-format-supported" =>
+            !values.is_empty() && values.all(value => value is MimeType(_))
+          "printer-resolution-supported" =>
+            !values.is_empty() &&
+            values.all(value => value is ResolutionValue(_))
+          "printer-state-reasons" =>
+            !values.is_empty() && values.all(value => value is Keyword(_))
+          _ => true
+        }
+    }
+    if !valid {
+      issues.push({
+        severity: Error,
+        attribute: attribute.name,
+        message: "invalid printer status type or cardinality: \{attribute.name}",
+      })
+    }
+  }
+  issues
+}
+
+///|
 pub fn Capabilities::health(self : Capabilities) -> PrinterHealth {
-  let state = match self.printer.get_int("printer-state") {
-    Some(code) => Some(printer_state_from_code(code))
-    None => None
+  let state = match self.printer.find("printer-state") {
+    Some({ values: [Enumeration(code)], .. }) if code > 0 =>
+      Some(printer_state_from_code(code))
+    _ => None
   }
   let accepting_jobs = self.accepting_jobs()
   let reasons = self.strings("printer-state-reasons")
-  let diagnostics : Array[Diagnostic] = []
+  let diagnostics = printer_attribute_issues(self.printer)
   match state {
     Some(Stopped) =>
       diagnostics.push({
@@ -93,7 +146,10 @@ pub fn Capabilities::health(self : Capabilities) -> PrinterHealth {
     accepting_jobs,
     reasons,
     diagnostics,
-    queued_jobs: self.printer.get_int("queued-job-count"),
+    queued_jobs: match self.printer.find("queued-job-count") {
+      Some({ values: [Integer(count)], .. }) if count >= 0 => Some(count)
+      _ => None
+    },
   }
 }
 

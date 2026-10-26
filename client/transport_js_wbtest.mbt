@@ -6,7 +6,7 @@ priv type RedirectProbe
 extern "js" fn start_redirect_probe() -> @js_async.Promise[RedirectProbe] =
   #| async () => {
   #|   const { createServer } = await import('node:http');
-  #|   const probe = { server: null, targetHits: 0, starts: 0, received: '', requests: 0 };
+  #|   const probe = { server: null, targetHits: 0, starts: 0, received: '', requests: 0, namedMedia: false };
   #|   probe.server = createServer((req, res) => {
   #|     const chunks = [];
   #|     req.on('data', chunk => chunks.push(chunk));
@@ -30,7 +30,7 @@ extern "js" fn start_redirect_probe() -> @js_async.Promise[RedirectProbe] =
   #|         if (req.url === '/short') headers['Content-Length'] = '32';
   #|         res.writeHead(req.url === '/forbidden' ? 403 : 200, headers);
   #|         let body = req.url === '/large' ? Buffer.alloc(16384, 120) : Buffer.from([2, 0, 0, 0, 0, 0, 0, 1, 3]);
-  #|         if (req.url === '/client') {
+  #|         if (req.url === '/client' || req.url === '/media') {
   #|           const attribute = (tag, name, value) => {
   #|             const n = Buffer.from(name), v = Buffer.from(value), a = Buffer.alloc(5 + n.length + v.length);
   #|             a[0] = tag; a.writeInt16BE(n.length, 1); n.copy(a, 3);
@@ -38,10 +38,32 @@ extern "js" fn start_redirect_probe() -> @js_async.Promise[RedirectProbe] =
   #|           };
   #|           const header = Buffer.from([2, 0, 0, 0, 0, 0, 0, 1, 1]);
   #|           header.writeInt32BE(Buffer.concat(chunks).readInt32BE(4), 4);
-  #|           body = Buffer.concat([header,
+  #|           const parts = [header,
   #|             attribute(0x47, 'attributes-charset', 'utf-8'),
-  #|             attribute(0x48, 'attributes-natural-language', 'en'), Buffer.from([4]),
-  #|             attribute(0x42, 'printer-name', 'JS loopback'), Buffer.from([3])]);
+  #|             attribute(0x48, 'attributes-natural-language', 'en')];
+  #|           const request = Buffer.concat(chunks), operation = request.readInt16BE(2);
+  #|           if (req.url === '/media' && operation === 2) {
+  #|             for (let i = 8; i < request.length;) {
+  #|               const tag = request[i++];
+  #|               if (tag === 3) break;
+  #|               if (tag < 0x10) continue;
+  #|               const nl = request.readInt16BE(i); i += 2;
+  #|               const name = request.subarray(i, i + nl).toString('utf8'); i += nl;
+  #|               const vl = request.readInt16BE(i); i += 2;
+  #|               if (name === 'media') probe.namedMedia = tag === 0x42 && request.subarray(i, i + vl).toString('utf8') === '办公室专用 A4';
+  #|               i += vl;
+  #|             }
+  #|             parts.push(Buffer.from([2]), attribute(0x21, 'job-id', [0, 0, 0, 27]), attribute(0x23, 'job-state', [0, 0, 0, 9]));
+  #|           } else {
+  #|             parts.push(Buffer.from([4]), attribute(0x42, 'printer-name', 'JS loopback'));
+  #|             if (req.url === '/media') parts.push(
+  #|               attribute(0x42, 'media-default', '办公室专用 A4'),
+  #|               attribute(0x42, 'media-supported', '办公室专用 A4'),
+  #|               attribute(0x49, 'document-format-supported', 'application/pdf'),
+  #|               attribute(0x23, 'operations-supported', [0, 0, 0, 2]));
+  #|           }
+  #|           parts.push(Buffer.from([3]));
+  #|           body = Buffer.concat(parts);
   #|         }
   #|         res.end(body);
   #|         if (req.url === '/short') res.socket.end();
@@ -70,6 +92,10 @@ extern "js" fn RedirectProbe::received_hex(self : RedirectProbe) -> String =
 ///|
 extern "js" fn RedirectProbe::requests(self : RedirectProbe) -> Int32 =
   #| probe => probe.requests
+
+///|
+extern "js" fn RedirectProbe::named_media(self : RedirectProbe) -> Bool =
+  #| probe => probe.namedMedia
 
 ///|
 extern "js" fn RedirectProbe::close(self : RedirectProbe) -> Unit =
@@ -171,6 +197,20 @@ async test "JS client validates an independently encoded real HTTP response" {
   assert_eq(capabilities.name(), "JS loopback")
   assert_eq(probe.requests(), 1)
   assert_false(client.busy)
+}
+
+///|
+async test "JS custom stock defaults preflight and print agree with independent wire parsing" {
+  let probe = start_redirect_probe().wait()
+  defer probe.close()
+  let client = Client::new(probe.uri("/media"), HttpTransport::new())
+  let capabilities = client.capabilities()
+  let options = capabilities.default_options("Named stock", "application/pdf")
+  assert_eq(options.media, Some("办公室专用 A4"))
+  let job = client.print_job(options, b"pdf")
+  assert_eq(job.id, 27)
+  assert_true(probe.named_media())
+  assert_eq(probe.requests(), 3)
 }
 
 ///|
