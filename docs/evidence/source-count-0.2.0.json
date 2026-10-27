@@ -1,13 +1,13 @@
 {
-  "implementation_lines": 5138,
+  "implementation_lines": 5151,
   "files": {
     "binary.mbt": 148,
     "capabilities.mbt": 307,
     "cli/arguments.mbt": 382,
-    "client/client.mbt": 241,
-    "client/transport.mbt": 98,
+    "client/client.mbt": 252,
+    "client/transport.mbt": 99,
     "client/transport_js.mbt": 63,
-    "cmd/main/main.mbt": 194,
+    "cmd/main/main.mbt": 195,
     "cmd/main/workflow.mbt": 202,
     "codec.mbt": 196,
     "compare.mbt": 133,

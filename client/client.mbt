@@ -72,15 +72,26 @@ pub async fn Client::exchange(
     self.busy = false
   }
   let response = try {
-    let bytes = @async.with_timeout(self.timeout_ms, async fn() {
-      self.transport.exchange(
-        self.context.printer,
-        payload,
-        self.limits.max_message_bytes,
-      )
-    })
+    let started = @async.now()
+    let bytes = @async.with_timeout(
+      self.timeout_ms,
+      async fn() {
+        self.transport.exchange(
+          self.context.printer,
+          payload,
+          self.limits.max_message_bytes,
+        )
+      },
+      error=RequestTimedOut,
+    )
+    if @async.now() - started >= self.timeout_ms.to_int64() {
+      raise RequestTimedOut
+    }
     let response = @ipp.decode(bytes, limits=self.limits)
     @ipp.validate_response(request, response)
+    if @async.now() - started >= self.timeout_ms.to_int64() {
+      raise RequestTimedOut
+    }
     response
   } catch {
     error =>

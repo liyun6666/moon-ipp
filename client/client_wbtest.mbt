@@ -385,3 +385,58 @@ async test "request ID wraps to a positive ID and a failed exchange releases the
   ])
   assert_false(client.busy)
 }
+
+///|
+priv struct DelayedCallbackTransport {
+  base : StubTransport
+}
+
+///|
+impl Transport for DelayedCallbackTransport with fn exchange(
+  self,
+  endpoint,
+  bytes,
+  maximum,
+) {
+  let started = @async.now()
+  // Deliberately block this event loop turn, so both the response and the
+  // timeout callback become ready before the scheduler can run the timer.
+  while @async.now() - started < 25L {
+
+  }
+  Transport::exchange(self.base, endpoint, bytes, maximum)
+}
+
+///|
+async test "a late response cannot win merely because its timeout callback was delayed" {
+  let transport = DelayedCallbackTransport::{ base: stub(), }
+  let client = Client::new("ipp://localhost/ipp/print", transport, timeout_ms=1)
+  try client.printer_attributes() catch {
+    error => assert_true(error is RequestTimedOut)
+  } noraise {
+    _ => fail("response accepted after request deadline")
+  }
+  assert_false(client.busy)
+}
+
+///|
+async test "a late print acknowledgement remains uncertain instead of successful or retryable" {
+  let transport = DelayedCallbackTransport::{ base: stub(), }
+  let client = Client::new("ipp://localhost/ipp/print", transport, timeout_ms=1)
+  try
+    client.print_job(
+      @ipp.JobOptions::new("Report", "application/pdf"),
+      b"pdf",
+      preflight=false,
+    )
+  catch {
+    error => assert_true(error is SubmissionUncertain(_))
+  } noraise {
+    _ => fail("late submission acknowledgement accepted")
+  }
+  assert_eq(
+    transport.base.requests.filter(request => request.code == 2).length(),
+    1,
+  )
+  assert_false(client.busy)
+}

@@ -191,6 +191,7 @@ fn describe_error(error : Error) -> String {
       "expected application/ipp; received \{value}"
     @client.ResponseTooLarge => "HTTP response exceeds configured byte limit"
     @client.ConcurrentRequest => "client already has a request in progress"
+    @client.RequestTimedOut => "request deadline exceeded"
     @client.SubmissionUncertain(message) =>
       "submission outcome unknown: \{message}"
     @client.JobWaitExpired(id) => "polling limit reached for job \{id}"
