@@ -1,0 +1,24 @@
+{
+  "checked_on": "2026-10-27",
+  "source_commit": "dfb984458d311c0b0b5d2b2b97bb3ef19582cf53",
+  "source_files_checked": 49,
+  "source_match": true,
+  "registry_entry": {
+    "name": "liyun6666/moon-ipp",
+    "version": "0.2.0",
+    "yanked": false,
+    "yanked_reason": null,
+    "license": "Apache-2.0",
+    "repository": "https://github.com/liyun6666/moon-ipp",
+    "keywords": [
+      "ipp",
+      "printing",
+      "protocol",
+      "cups",
+      "client"
+    ],
+    "description": "MoonBit-native IPP codec, capability validation and network printing client",
+    "is_new": false,
+    "created_at": "2026-10-27T00:35:27.459641"
+  }
+}

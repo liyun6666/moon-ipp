@@ -1,0 +1,10 @@
+{
+  "result": "passed",
+  "plan_does_not_create_jobs": true,
+  "unsupported_plan_fails": true,
+  "print_and_wait_completed": true,
+  "receipt_matches_stdout": true,
+  "reused_receipt_does_not_duplicate": true,
+  "canceled_wait_exits_nonzero": true,
+  "document_bytes_identical": true
+}

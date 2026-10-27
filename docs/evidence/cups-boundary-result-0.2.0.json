@@ -1,0 +1,8 @@
+{
+  "result": "passed",
+  "independent_server": "CUPS ippeveprinter",
+  "empty_final_send_accepted": true,
+  "job_completed": true,
+  "received_document_files": 1,
+  "document_unchanged": true
+}

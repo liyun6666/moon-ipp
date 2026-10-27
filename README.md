@@ -12,6 +12,7 @@ MoonBit 原生 IPP 网络打印协议库和客户端。业务系统可以查询�
 
 ```sh
 moon add liyun6666/moon-ipp@0.2.0
+moon add moonbitlang/async@0.22.5
 ```
 
 在 `moon.pkg` 中导入所需包：
@@ -20,8 +21,11 @@ moon add liyun6666/moon-ipp@0.2.0
 import {
   "liyun6666/moon-ipp" @ipp,
   "liyun6666/moon-ipp/client",
+  "moonbitlang/async",
 }
 ```
+
+编写 `async main` 或 `async test` 的消费工程需要直接声明并导入异步运行时；只使用协议核心时可省略 client 和 async。
 
 协议核心和参数解析支持 wasm-gc、JS、native；异步客户端支持 JS、native；文件操作 CLI 支持 native。浏览器使用受目标服务 CORS 策略约束。CLI 可从源码运行：
 
@@ -127,7 +131,7 @@ moon run cmd/main --target native -- print --uri ipp://localhost:8631/ipp/print 
 
 Windows 可将命令前缀换为 `moon run scripts/verify.mbtx --run`。完整操作和恢复方法见 [使用指南](docs/使用指南.md)。`plan` 只查询能力，不创建任务；计划有错误时输出诊断并返回非零退出码。默认先使用标准双面/纸张等能力预检，文档仍须是设备支持的已有 PDF 或文本，不执行格式转换。
 
-带 `--output` 的打印会在联网前独占创建新凭据文件。取得任务编号后先保存，再等待结果；`completed` 才成功退出，`canceled`、`aborted`、超时和结果未知均失败。已有凭据不能复用，同一路径并发调用也不会都提交。凭据不含文档内容或认证头。重新启动后可按其中的 `printer` 和 `job.id` 使用 `job` / `wait` 查询，继续跟踪不需要再打印。
+带 `--output` 的打印会在联网前独占创建新凭据文件，取得任务编号即保存。只有同时带 `--wait` 才继续等待，并要求 `completed` 成功退出；`canceled`、`aborted`、超时和结果未知均失败。不带 `--wait` 时，设备接受任务后即返回，凭据状态为 `accepted`，不代表完成。已有凭据不能复用，同一路径并发调用也不会都提交。凭据不含文档内容或认证头。重新启动后可按其中的 `printer` 和 `job.id` 使用 `job` / `wait` 查询，继续跟踪不需要再打印。
 
 凭据是本地操作记录，不是设备端幂等键。更换凭据路径、删除凭据或从另一台机器提交仍可能重复打印。若记录为 `submitting`、`outcome-unknown`，或写入被中断而无法确认，先查询设备队列；不要直接重发。断电后的目录元数据持久性依赖文件系统。
 
@@ -168,4 +172,4 @@ python3 scripts/count_source.py --minimum 4001
 
 原创实现依据 [RFC 8010](https://www.rfc-editor.org/rfc/rfc8010) 和 [RFC 8011](https://www.rfc-editor.org/rfc/rfc8011)。[OpenPrinting CUPS](https://github.com/OpenPrinting/cups) 源码未被复制。依赖与许可证见 [第三方说明](THIRD_PARTY.md)。
 
-已发布 0.1.5；命名纸张、未知能力、状态校验修复及成功 CI、独立安装证据见 [2026-10-26 复核](docs/复核-2026-10-26.md)。协议边界与真实 HTTP 验证见 [0.1.4 边界复核](docs/边界复核-0.1.4.md)，Windows C4005 修复见 [0.1.3 验证记录](docs/0.1.3-验证记录.md)。这些是工程验证记录，不代表赛事官方验收结论。
+已发布 0.2.0；计划、凭据、跟踪及独立 CUPS/安装验证见 [实用工作流复核](docs/实用工作流-0.2.0.md)。命名纸张与未知能力处理见 [2026-10-26 复核](docs/复核-2026-10-26.md)，协议边界与真实 HTTP 见 [0.1.4 复核](docs/边界复核-0.1.4.md)，Windows C4005 修复见 [0.1.3 验证记录](docs/0.1.3-验证记录.md)。这些是工程验证记录，不代表赛事官方验收结论。
