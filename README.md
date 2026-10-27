@@ -172,4 +172,4 @@ python3 scripts/count_source.py --minimum 4001
 
 原创实现依据 [RFC 8010](https://www.rfc-editor.org/rfc/rfc8010) 和 [RFC 8011](https://www.rfc-editor.org/rfc/rfc8011)。[OpenPrinting CUPS](https://github.com/OpenPrinting/cups) 源码未被复制。依赖与许可证见 [第三方说明](THIRD_PARTY.md)。
 
-已发布 0.2.0；计划、凭据、跟踪及独立 CUPS/安装验证见 [实用工作流复核](docs/实用工作流-0.2.0.md)。命名纸张与未知能力处理见 [2026-10-26 复核](docs/复核-2026-10-26.md)，协议边界与真实 HTTP 见 [0.1.4 复核](docs/边界复核-0.1.4.md)，Windows C4005 修复见 [0.1.3 验证记录](docs/0.1.3-验证记录.md)。这些是工程验证记录，不代表赛事官方验收结论。
+已发布 0.2.0；最新规则核对、功能覆盖、运行证据及参赛资格待核实项见 [2026-10-27 终审自查](docs/终审自查-2026-10-27.md)。计划、凭据、跟踪及独立 CUPS/安装验证见 [实用工作流复核](docs/实用工作流-0.2.0.md)。命名纸张与未知能力处理见 [2026-10-26 复核](docs/复核-2026-10-26.md)，协议边界与真实 HTTP 见 [0.1.4 复核](docs/边界复核-0.1.4.md)，Windows C4005 修复见 [0.1.3 验证记录](docs/0.1.3-验证记录.md)。这些是工程验证记录，不代表赛事官方验收结论。
