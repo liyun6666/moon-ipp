@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
       - name: Install MoonBit stable
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
@@ -40,7 +40,7 @@ jobs:
         run: moon run --deny-warn scripts/interop_workflow.mbtx
       - name: Preserve interoperability evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: cups-interoperability-evidence
           path: interop-output/
@@ -48,7 +48,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
       - name: Install MoonBit stable
         shell: pwsh
         run: |

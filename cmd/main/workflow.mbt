@@ -1,4 +1,14 @@
 ///|
+let progress_lock : @async.Mutex = @async.Mutex()
+
+///|
+async fn progress_line(message : String) -> Unit {
+  progress_lock.acquire()
+  defer progress_lock.release()
+  @stdio.stderr.write(message)
+}
+
+///|
 fn observations_json(observations : Array[@ipp.JobObservation]) -> Json {
   Json::array(
     observations.map(observation => {
@@ -125,7 +135,7 @@ async fn print_document(
         Some(path) =>
           update_receipt(path, snapshot(failure)) catch {
             _ =>
-              @stdio.stderr.write(
+              progress_line(
                 "moon-ipp: receipt update failed; keep the existing file and reconcile the printer queue\n",
               ) catch {
                 _ => ()
@@ -149,7 +159,7 @@ async fn print_document(
     job = Some(accepted)
     state = "accepted"
     if arguments.wait || arguments.output is Some(_) {
-      @stdio.stderr.write(
+      progress_line(
         "moon-ipp: accepted job \{accepted.id}; query this job before submitting again\n",
       )
     }

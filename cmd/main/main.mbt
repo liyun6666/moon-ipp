@@ -204,7 +204,7 @@ async fn main {
   let user_args = if args.is_empty() { [] } else { args[1:].to_owned() }
   execute(@cli.parse(user_args)) catch {
     error => {
-      @stdio.stderr.write("moon-ipp: \{describe_error(error)}\n") catch {
+      progress_line("moon-ipp: \{describe_error(error)}\n") catch {
         _ => ()
       }
       exit_process(1)
