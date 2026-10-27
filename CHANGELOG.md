@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0
+
+- 新增 `plan` CLI 和 `Client::plan`：根据实际文件大小、选项和设备能力生成计划，不创建或提交打印任务。
+- 新增 `print --wait --output NEW_RECEIPT.json`：独占建立凭据，保存已接受任务编号，再跟踪完成；失败保留未知/取消/中止/跟踪错误状态，不自动重发。
+- 凭据更新使用同目录临时文件、文件同步及替换；已有凭据或冲突临时文件不覆盖，防止意外重用同一凭据提交。
+- 修复 CLI `wait` 将 canceled/aborted 当作成功退出的问题；stdout 仍保留结构化观察记录。
+- 修复外部包无法实现所声明可注入 `Transport` 的问题，开放 trait 实现。
+- CLI 新增 Plan 枚举项及 Arguments.wait 字段，Client 新增 plan 方法，属于有意的接口扩展；自定义匹配 Command 的调用方需处理 Plan。
+- 新增独立 CUPS 工作流测试，检查计划不入队、一次命令打印并等待、凭据一致性、重复凭据不重复提交和取消退出码。
+
 ## 0.1.5
 
 - 接受设备声明的自定义 media 名称，包括非 ASCII 名称；默认选项、CLI、预检和请求编码保持一致，按 keyword/name 选择语法。

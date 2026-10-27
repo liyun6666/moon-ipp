@@ -36,6 +36,7 @@ pub async fn Client::exchange(Self, @moon-ipp.Message) -> @moon-ipp.Message
 pub async fn Client::job(Self, Int32) -> @moon-ipp.Job
 pub async fn Client::jobs(Self, which? : String, mine? : Bool, limit? : Int32) -> Array[@moon-ipp.Job]
 pub fn Client::new(String, &Transport, user? : String, timeout_ms? : Int32, limits? : @moon-ipp.DecodeLimits) -> Self raise @moon-ipp.IppError
+pub async fn Client::plan(Self, @moon-ipp.JobOptions, Int32) -> @moon-ipp.PrintPlan
 pub async fn Client::print_job(Self, @moon-ipp.JobOptions, Bytes, preflight? : Bool) -> @moon-ipp.Job
 pub async fn Client::printer_attributes(Self, requested? : Array[String]) -> @moon-ipp.Message
 pub async fn Client::send_document(Self, Int32, String, Bytes, last? : Bool) -> @moon-ipp.Message
@@ -52,6 +53,6 @@ pub impl Transport for HttpTransport
 // Type aliases
 
 // Traits
-pub trait Transport {
+pub(open) trait Transport {
   async fn exchange(Self, @moon-ipp.PrinterUri, Bytes, Int32) -> Bytes
 }

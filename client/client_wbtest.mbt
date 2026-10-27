@@ -84,6 +84,34 @@ fn stub() -> StubTransport {
 }
 
 ///|
+async test "printing plan queries capabilities without creating or validating a job" {
+  let transport = stub()
+  let client = Client::new("ipp://localhost/ipp/print", transport)
+  let plan = client.plan(@ipp.JobOptions::new("Report", "application/pdf"), 100)
+  assert_true(plan.can_submit())
+  assert_eq(transport.requests.map(request => request.code), [11])
+  let rejected = client.plan(@ipp.JobOptions::new("Photo", "image/png"), 100)
+  assert_false(rejected.can_submit())
+  assert_eq(transport.requests.map(request => request.code), [11, 11])
+}
+
+///|
+async test "planning rejects invalid local document lengths before network IO" {
+  let transport = stub()
+  let client = Client::new("ipp://localhost/ipp/print", transport)
+  for length in [-1, 16777217] {
+    try
+      client.plan(@ipp.JobOptions::new("Report", "application/pdf"), length)
+    catch {
+      _ => ()
+    } noraise {
+      _ => fail("invalid planning length accepted")
+    }
+  }
+  assert_true(transport.requests.is_empty())
+}
+
+///|
 test "authorization rejects control bytes before any HTTP request" {
   for
     value in [

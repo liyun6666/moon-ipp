@@ -150,7 +150,7 @@ async fn main {
       ["fmt", "--check"],
       [
         "fmt", "scripts/verify.mbtx", "scripts/msvc-cl.mbtx", "scripts/interop_boundaries.mbtx",
-        "--check",
+        "scripts/interop_workflow.mbtx", "--check",
       ],
     ]
   }

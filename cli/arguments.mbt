@@ -8,6 +8,7 @@ pub(all) enum Command {
   Job
   Cancel
   Print
+  Plan
   Validate
   Create
   Send
@@ -42,6 +43,7 @@ pub(all) struct Arguments {
   requested : Array[String]
   last_document : Bool
   preflight : Bool
+  wait : Bool
 } derive(@debug.Debug)
 
 ///|
@@ -58,6 +60,7 @@ fn command_from_string(text : String) -> Command raise @ipp.IppError {
     "job" => Job
     "cancel" => Cancel
     "print" => Print
+    "plan" => Plan
     "validate" => Validate
     "create" => Create
     "send" => Send
@@ -115,13 +118,16 @@ fn option_names() -> Array[String] {
     "uri", "input", "output", "other", "user", "format", "name", "copies", "media",
     "sides", "color", "resolution", "quality", "orientation", "number-up", "pages",
     "job-id", "timeout", "interval", "polls", "which", "limit", "requested", "mine",
-    "no-preflight", "more-documents",
+    "no-preflight", "more-documents", "wait",
   ]
 }
 
 ///|
 fn boolean_option(name : String) -> Bool {
-  name == "mine" || name == "no-preflight" || name == "more-documents"
+  name == "mine" ||
+  name == "no-preflight" ||
+  name == "more-documents" ||
+  name == "wait"
 }
 
 ///|
@@ -165,25 +171,36 @@ fn require_allowed(
       command != Decode && command != Encode && command != Compare
     "input" =>
       command == Print ||
+      command == Plan ||
       command == Send ||
       command == Decode ||
       command == Encode ||
       command == Compare
-    "output" => command == Decode || command == Encode
+    "output" =>
+      command == Decode ||
+      command == Encode ||
+      command == Print ||
+      command == Plan
     "other" => command == Compare
     "job-id" =>
       command == Job || command == Cancel || command == Send || command == Wait
-    "interval" | "polls" => command == Wait
+    "interval" | "polls" => command == Wait || command == Print
+    "wait" => command == Print
     "which" | "mine" | "limit" => command == Jobs
     "requested" => command == Capabilities
     "more-documents" => command == Send
     "no-preflight" => command == Print
     "format" =>
       command == Print ||
+      command == Plan ||
       command == Validate ||
       command == Create ||
       command == Send
-    _ => command == Print || command == Validate || command == Create
+    _ =>
+      command == Print ||
+      command == Plan ||
+      command == Validate ||
+      command == Create
   }
   if !allowed {
     raise @ipp.Invalid("option --\{name} does not apply to this command")
@@ -242,6 +259,11 @@ pub fn parse(arguments : Array[String]) -> Arguments raise @ipp.IppError {
     values[name] = value
     index += 1
   }
+  if command == Print &&
+    !values.contains("wait") &&
+    (values.contains("interval") || values.contains("polls")) {
+    raise @ipp.Invalid("--interval and --polls require print --wait")
+  }
   let network = match command {
     Help | Version | Decode | Encode | Compare => false
     _ => true
@@ -254,6 +276,7 @@ pub fn parse(arguments : Array[String]) -> Arguments raise @ipp.IppError {
     None
   }
   let input = if command == Print ||
+    command == Plan ||
     command == Send ||
     command == Decode ||
     command == Encode ||
@@ -356,13 +379,14 @@ pub fn parse(arguments : Array[String]) -> Arguments raise @ipp.IppError {
     limit: positive(default_value(values, "limit", "100"), 10000),
     last_document: !values.contains("more-documents"),
     preflight: !values.contains("no-preflight"),
+    wait: values.contains("wait"),
   }
 }
 
 ///|
 pub fn help() -> String {
   let text =
-    #|moon-ipp 0.1.5 — MoonBit IPP library and client
+    #|moon-ipp 0.2.0 — MoonBit IPP library and client
     #|Usage: moon run cmd/main --target native -- <command> [options]
     #|
     #|Commands:
@@ -371,6 +395,8 @@ pub fn help() -> String {
     #|  jobs          --uri URI [--which all|completed|not-completed] [--mine] [--limit N]
     #|  job|cancel    --uri URI --job-id N
     #|  print         --uri URI --input FILE [print options] [--no-preflight]
+    #|                [--wait --interval MS --polls N] [--output NEW_RECEIPT.json]
+    #|  plan          --uri URI --input FILE [print options] [--output NEW_PLAN.json]
     #|  validate      --uri URI --format MIME [print options]
     #|  create        --uri URI --format MIME [print options]
     #|  send          --uri URI --job-id N --input FILE [--format MIME] [--more-documents]
@@ -379,12 +405,14 @@ pub fn help() -> String {
     #|  encode        --input JSON_FILE --output IPP_FILE
     #|  compare       --input BEFORE_JSON --other AFTER_JSON
     #|
-    #|Print options: --name TEXT --format MIME --copies N --media KEYWORD
+    #|Print options: --name TEXT --format MIME --copies N --media KEYWORD_OR_NAME
     #|  --sides one-sided|two-sided-long-edge|two-sided-short-edge
     #|  --color auto|color|monochrome|bi-level --resolution DPI or XxY
     #|  --quality 3|4|5 --orientation 3|4|5|6 --number-up N --pages 1-3,5
     #|Network options: --user TEXT --timeout MS
     #|Authentication: MOON_IPP_AUTHORIZATION environment variable, ipps only.
     #|Output: JSON. Print uncertainty is an error; never retry automatically.
+    #|Plan queries capabilities without submitting. New receipt paths must not exist.
+    #|wait and print --wait succeed only when the job completes; canceled/aborted fail.
   text
 }

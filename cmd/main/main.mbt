@@ -67,7 +67,7 @@ async fn execute(arguments : @cli.Arguments) -> Unit {
       return
     }
     @cli.Version => {
-      @stdio.stdout.write("moon-ipp 0.1.5\n")
+      @stdio.stdout.write("moon-ipp 0.2.0\n")
       return
     }
     @cli.Decode => {
@@ -130,12 +130,27 @@ async fn execute(arguments : @cli.Arguments) -> Unit {
       emit(client.cancel_job(required_id(arguments.job_id)).to_json(), None)
     @cli.Print => {
       let document = read_bytes(required_path(arguments.input), 16777216)
-      let job = client.print_job(
-        arguments.options,
-        document,
-        preflight=arguments.preflight,
-      )
-      emit(job.to_json(), None)
+      emit(print_document(client, arguments, document), None)
+    }
+    @cli.Plan => {
+      let document = read_bytes(required_path(arguments.input), 16777216)
+      let plan = client.plan(arguments.options, document.length())
+      let json = plan.to_json()
+      match arguments.output {
+        Some(path) =>
+          @fs.write_file(
+            path,
+            json.stringify(indent=2) + "\n",
+            create_mode=@fs.CreateNew,
+            permission=384,
+          )
+        None => emit(json, None)
+      }
+      if !plan.can_submit() {
+        raise @ipp.Unsupported(
+          "printing plan contains errors; no job was submitted",
+        )
+      }
     }
     @cli.Validate =>
       emit(client.validate_job(arguments.options).to_json(), None)
@@ -155,18 +170,8 @@ async fn execute(arguments : @cli.Arguments) -> Unit {
         interval_ms: arguments.interval_ms,
         maximum_polls: arguments.polls,
       })
-      emit(
-        Json::array(
-          observations.map(observation => {
-            let result : Json = {
-              "elapsed_ms": Json::number(observation.elapsed_ms.to_double()),
-              "job": observation.job.to_json(),
-            }
-            result
-          }),
-        ),
-        None,
-      )
+      emit(observations_json(observations), None)
+      require_completed(observations)
     }
     _ => raise @ipp.Invalid("unexpected command")
   }

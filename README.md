@@ -11,7 +11,7 @@ MoonBit 原生 IPP 网络打印协议库和客户端。业务系统可以查询�
 需要 MoonBit stable 2026-10-23 或更新的兼容版本。网络客户端依赖 `moonbitlang/async@0.22.5`；native 构建需要 C 编译器，Windows 异步库要求 MSVC。Windows/Linux CI 验证 native，JS 客户端通过 Node.js 测试。
 
 ```sh
-moon add liyun6666/moon-ipp@0.1.5
+moon add liyun6666/moon-ipp@0.2.0
 ```
 
 在 `moon.pkg` 中导入所需包：
@@ -115,6 +115,23 @@ python3 scripts/interop_cups.py
 ```
 
 证据存于 `interop-output/`，包括服务端日志、每条命令的输入输出和 `result.json`，CI 上传证据 artifact。虚拟设备验证协议交互与文档接收；纸面输出需按实体设备另行验证。
+
+## 实际使用流程
+
+已有设备提供 `ipp://` 或 `ipps://` 地址后，可先查看文件能否按指定参数提交，再打印并等待结果：
+
+```sh
+moon run cmd/main --target native -- plan --uri ipp://localhost:8631/ipp/print --input examples/report.pdf
+moon run cmd/main --target native -- print --uri ipp://localhost:8631/ipp/print --input examples/report.pdf --wait --interval 500 --polls 120 --output report-receipt.json
+```
+
+Windows 可将命令前缀换为 `moon run scripts/verify.mbtx --run`。完整操作和恢复方法见 [使用指南](docs/使用指南.md)。`plan` 只查询能力，不创建任务；计划有错误时输出诊断并返回非零退出码。默认先使用标准双面/纸张等能力预检，文档仍须是设备支持的已有 PDF 或文本，不执行格式转换。
+
+带 `--output` 的打印会在联网前独占创建新凭据文件。取得任务编号后先保存，再等待结果；`completed` 才成功退出，`canceled`、`aborted`、超时和结果未知均失败。已有凭据不能复用，同一路径并发调用也不会都提交。凭据不含文档内容或认证头。重新启动后可按其中的 `printer` 和 `job.id` 使用 `job` / `wait` 查询，继续跟踪不需要再打印。
+
+凭据是本地操作记录，不是设备端幂等键。更换凭据路径、删除凭据或从另一台机器提交仍可能重复打印。若记录为 `submitting`、`outcome-unknown`，或写入被中断而无法确认，先查询设备队列；不要直接重发。断电后的目录元数据持久性依赖文件系统。
+
+不用 `--wait` 和 `--output` 时，原有 `print` 输出任务 JSON 的用法保留；单独 `wait` 也会在取消或中止时返回非零退出码。0.2.0 的 CLI `Command` 增加 `Plan`，`Arguments` 增加 `wait`；库调用方可实现开放的 `Transport` trait，接入自己的网络层。
 
 ## 功能与边界
 

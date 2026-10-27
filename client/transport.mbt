@@ -12,7 +12,7 @@ pub(all) suberror ClientError {
 pub extend ClientError with @debug.Debug::{to_repr}
 
 ///|
-pub trait Transport {
+pub(open) trait Transport {
   async fn exchange(Self, @ipp.PrinterUri, Bytes, Int32) -> Bytes
 }
 
@@ -70,7 +70,7 @@ async fn exchange_http(
   let headers : Map[@http.CaseInsensitiveString, String] = Map([
     (@http.CaseInsensitiveString("Content-Type"), "application/ipp"),
     (@http.CaseInsensitiveString("Accept"), "application/ipp"),
-    (@http.CaseInsensitiveString("User-Agent"), "moon-ipp/0.1.5"),
+    (@http.CaseInsensitiveString("User-Agent"), "moon-ipp/0.2.0"),
   ])
   match authorization {
     Some(value) => {

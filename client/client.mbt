@@ -110,6 +110,24 @@ pub async fn Client::capabilities(self : Client) -> @ipp.Capabilities {
 }
 
 ///|
+/// Preview a document submission using printer capabilities without creating
+/// or validating a job at the printer. Missing capabilities remain diagnostics.
+pub async fn Client::plan(
+  self : Client,
+  options : @ipp.JobOptions,
+  document_bytes : Int32,
+) -> @ipp.PrintPlan {
+  options.validate()
+  if document_bytes < 0 {
+    raise @ipp.Invalid("negative document byte count")
+  }
+  if document_bytes > self.limits.max_document_bytes {
+    raise @ipp.Limit("document bytes")
+  }
+  self.capabilities().plan(options, document_bytes)
+}
+
+///|
 pub async fn Client::validate_job(
   self : Client,
   options : @ipp.JobOptions,

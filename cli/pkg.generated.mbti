@@ -32,6 +32,7 @@ pub(all) struct Arguments {
   requested : Array[String]
   last_document : Bool
   preflight : Bool
+  wait : Bool
 } derive(@debug.Debug)
 pub fn Arguments::to_repr(Self) -> @debug.Repr
 
@@ -44,6 +45,7 @@ pub(all) enum Command {
   Job
   Cancel
   Print
+  Plan
   Validate
   Create
   Send

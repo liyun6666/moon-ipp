@@ -62,3 +62,39 @@ test "print options accept advertised human-readable custom stock names" {
   @ipp.validate_request(request)
   assert_eq(@ipp.decode(@ipp.encode(request)), request)
 }
+
+///|
+test "plan and print tracking flags retain strict command ownership" {
+  let plan = parse([
+    "plan", "--uri", "ipp://localhost/ipp/print", "--input", "report.pdf", "--output",
+    "plan.json",
+  ])
+  assert_eq(plan.command, Plan)
+  assert_false(plan.wait)
+  let print = parse([
+    "print", "--uri", "ipp://localhost/ipp/print", "--input", "report.pdf", "--wait",
+    "--polls", "3", "--output", "receipt.json",
+  ])
+  assert_true(print.wait)
+  assert_eq(print.polls, 3)
+  for
+    args in [
+      [
+        "plan", "--uri", "ipp://localhost/ipp/print", "--input", "a.pdf", "--wait",
+      ],
+      [
+        "print", "--uri", "ipp://localhost/ipp/print", "--input", "a.pdf", "--polls",
+        "3",
+      ],
+      [
+        "wait", "--uri", "ipp://localhost/ipp/print", "--job-id", "1", "--output",
+        "x.json",
+      ],
+    ] {
+    try parse(args) catch {
+      _ => ()
+    } noraise {
+      _ => fail("inapplicable workflow option accepted")
+    }
+  }
+}

@@ -1,0 +1,176 @@
+----
+import {
+  "moonbitlang/async@0.22.5",
+  "moonbitlang/async@0.22.5/shell",
+  "moonbitlang/async@0.22.5/fs",
+  "moonbitlang/core/json",
+}
+----
+
+///|
+fn field(value : Json, name : String) -> Json raise {
+  match value {
+    Object(fields) => fields.get(name).unwrap()
+    _ => fail("object expected")
+  }
+}
+
+///|
+fn integer(value : Json) -> Int32 raise {
+  match value {
+    Number(n, ..) if n >= 0 && n <= 2147483647.0 && n == n.floor() => n.to_int()
+    _ => fail("nonnegative integer expected")
+  }
+}
+
+///|
+async fn main {
+  let output = "interop-output/workflow-" + @async.now().to_string()
+  let spool = output + "/spool"
+  @fs.mkdir(spool, recursive=true, allow_exist=true)
+  let evidence : Array[Json] = []
+  let uri = "ipp://localhost:8633/ipp/print"
+  let cli = async fn(arguments : Array[String], success : Bool) -> Json {
+    let command = ["run", "cmd/main", "--target", "native", "--"]
+    for argument in arguments {
+      command.push(argument)
+    }
+    let result = @shell.Cmd("moon", command).output(
+      timeout_ms=90000,
+      max_output_bytes=1048576,
+    )
+    evidence.push({
+      "arguments": Json::array(arguments.map(Json::string)),
+      "exit": Json::number(result.exit_code().to_double()),
+      "stdout": Json::string(result.stdout()),
+      "stderr": Json::string(result.stderr()),
+    })
+    @fs.write_file(
+      output + "/commands.json",
+      Json::array(evidence).stringify(indent=2),
+    )
+    if success {
+      result.check()
+    } else {
+      assert_true(result.exit_code() != 0, msg="command unexpectedly succeeded")
+    }
+    if result.stdout().trim().is_empty() {
+      Json::null()
+    } else {
+      @json.parse(result.stdout(), reject_duplicate_keys=true)
+    }
+  }
+  @async.with_task_group(group => {
+    group.spawn_bg(
+      () => {
+        @shell.Cmd(
+          "ippeveprinter",
+          [
+            "-n", "localhost", "-p", "8633", "-s", "60", "-f", "text/plain", "-d",
+            spool, "-k", "-v", "Moon IPP Workflow Test",
+          ],
+          stdout=@shell.ToFile(output + "/server.log"),
+          stderr=@shell.AppendToFile(output + "/server.log"),
+        ).run()
+      },
+      no_wait=true,
+    )
+    let ready = for _ in 0..<50 {
+      let status = @shell.Cmd("moon", [
+        "run", "cmd/main", "--target", "native", "--", "health", "--uri", uri, "--timeout",
+        "500",
+      ]).output(timeout_ms=15000)
+      if status.exit_code() == 0 {
+        break true
+      }
+      @async.sleep(100)
+    } nobreak {
+      false
+    }
+    assert_true(ready)
+    let document = "Moon IPP practical print workflow\n"
+    let input = output + "/notice.txt"
+    let receipt = output + "/receipt.json"
+    @fs.write_file(input, document)
+    let initial = cli(["jobs", "--uri", uri, "--which", "all"], true)
+    let initial_count = integer(field(field(initial, "summary"), "total"))
+    let plan = cli(["plan", "--uri", uri, "--input", input], true)
+    assert_eq(field(plan, "can_submit"), Json::boolean(true))
+    let rejected = cli(
+      ["plan", "--uri", uri, "--input", input, "--format", "image/png"],
+      false,
+    )
+    assert_eq(field(rejected, "can_submit"), Json::boolean(false))
+    let after_plan = cli(["jobs", "--uri", uri, "--which", "all"], true)
+    assert_eq(
+      integer(field(field(after_plan, "summary"), "total")),
+      initial_count,
+    )
+    let printed = cli(
+      [
+        "print", "--uri", uri, "--input", input, "--wait", "--interval", "100", "--polls",
+        "200", "--output", receipt,
+      ],
+      true,
+    )
+    assert_eq(field(printed, "state"), Json::string("completed"))
+    assert_eq(field(field(printed, "job"), "state"), Json::string("completed"))
+    assert_eq(@fs.read_file(receipt).json(), printed)
+    let job_id = integer(field(field(printed, "job"), "id"))
+    let queried = cli(
+      ["job", "--uri", uri, "--job-id", job_id.to_string()],
+      true,
+    )
+    assert_eq(field(queried, "state"), Json::string("completed"))
+    let _ = cli(
+      ["print", "--uri", uri, "--input", input, "--output", receipt],
+      false,
+    )
+    let after_duplicate = cli(["jobs", "--uri", uri, "--which", "all"], true)
+    assert_eq(
+      integer(field(field(after_duplicate, "summary"), "total")),
+      initial_count + 1,
+    )
+    let held = cli(
+      [
+        "create", "--uri", uri, "--format", "text/plain", "--name", "Cancellation outcome",
+      ],
+      true,
+    )
+    let held_id = integer(field(held, "id"))
+    let _ = cli(["cancel", "--uri", uri, "--job-id", held_id.to_string()], true)
+    let canceled = cli(
+      ["wait", "--uri", uri, "--job-id", held_id.to_string(), "--polls", "1"],
+      false,
+    )
+    match canceled {
+      Array(values) =>
+        assert_eq(
+          field(field(values.last().unwrap(), "job"), "state"),
+          Json::string("canceled"),
+        )
+      _ => fail("observations expected")
+    }
+    let mut received = 0
+    for name in @fs.readdir(spool) {
+      let path = spool + "/" + name
+      if @fs.kind(path) == @fs.Regular {
+        assert_eq(@fs.read_file(path).text(), document)
+        received += 1
+      }
+    }
+    assert_eq(received, 1)
+    let result : Json = {
+      "result": "passed",
+      "plan_does_not_create_jobs": true,
+      "unsupported_plan_fails": true,
+      "print_and_wait_completed": true,
+      "receipt_matches_stdout": true,
+      "reused_receipt_does_not_duplicate": true,
+      "canceled_wait_exits_nonzero": true,
+      "document_bytes_identical": true,
+    }
+    @fs.write_file(output + "/result.json", result.stringify(indent=2))
+  })
+  println("CUPS practical workflow passed: " + output)
+}
