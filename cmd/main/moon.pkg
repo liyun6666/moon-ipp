@@ -4,6 +4,7 @@ import {
   "liyun6666/moon-ipp/cli",
   "moonbitlang/async",
   "moonbitlang/async/fs",
+  "moonbitlang/async/os_error",
   "moonbitlang/async/stdio",
   "moonbitlang/core/env",
   "moonbitlang/core/json",

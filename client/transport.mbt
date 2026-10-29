@@ -71,7 +71,7 @@ async fn exchange_http(
   let headers : Map[@http.CaseInsensitiveString, String] = Map([
     (@http.CaseInsensitiveString("Content-Type"), "application/ipp"),
     (@http.CaseInsensitiveString("Accept"), "application/ipp"),
-    (@http.CaseInsensitiveString("User-Agent"), "moon-ipp/0.2.0"),
+    (@http.CaseInsensitiveString("User-Agent"), "moon-ipp/0.2.1"),
   ])
   match authorization {
     Some(value) => {

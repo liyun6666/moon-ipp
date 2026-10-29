@@ -214,6 +214,122 @@ priv struct SlowWorkflowTransport {
 }
 
 ///|
+async test "transient Windows replacement conflicts preserve old receipt until atomic success" {
+  let directory = @fs.tmpdir(prefix="moon-ipp-replace-")
+  let path = directory + "/receipt.json"
+  let temporary = path + ".moon-ipp-tmp"
+  defer {
+    if @fs.exists(temporary) {
+      @fs.remove(temporary)
+    }
+    @fs.remove(path)
+    @fs.rmdir(directory)
+  }
+  @fs.write_file(path, "original receipt")
+  @fs.write_file(temporary, "complete replacement")
+  let conflicts = [5, 32, 33]
+  let mut calls = 0
+  replace_receipt(
+    () => {
+      assert_eq(@fs.read_file(path).text(), "original receipt")
+      calls += 1
+      if calls <= conflicts.length() {
+        raise @os_error.OSError(
+          conflicts[calls - 1],
+          context="injected Windows replacement conflict",
+        )
+      }
+      @fs.rename(temporary, path, replace=true)
+    },
+    windows=true,
+  )
+  assert_true(calls >= 4 && calls <= 8)
+  assert_eq(@fs.read_file(path).text(), "complete replacement")
+  assert_false(@fs.exists(temporary))
+}
+
+///|
+async test "persistent replacement denial remains bounded and leaves receipt intact" {
+  let directory = @fs.tmpdir(prefix="moon-ipp-replace-")
+  let path = directory + "/receipt.json"
+  defer {
+    @fs.remove(path)
+    @fs.rmdir(directory)
+  }
+  @fs.write_file(path, "original receipt")
+  let mut calls = 0
+  try
+    replace_receipt(
+      () => {
+        calls += 1
+        raise @os_error.OSError(5, context="persistent replacement denial")
+      },
+      windows=true,
+    )
+  catch {
+    @os_error.OSError(5, context~) =>
+      assert_eq(context, "persistent replacement denial")
+    _ => fail("replacement error was changed")
+  } noraise {
+    _ => fail("persistent denial treated as success")
+  }
+  assert_eq(calls, 8)
+  assert_eq(@fs.read_file(path).text(), "original receipt")
+}
+
+///|
+async test "replacement retries do not swallow other errors or Unix failures" {
+  let mut calls = 0
+  try
+    replace_receipt(
+      () => {
+        calls += 1
+        raise @os_error.OSError(2, context="missing replacement source")
+      },
+      windows=true,
+    )
+  catch {
+    @os_error.OSError(2, ..) => ()
+    _ => fail("missing source error was changed")
+  } noraise {
+    _ => fail("missing source treated as success")
+  }
+  assert_eq(calls, 1)
+  calls = 0
+  try
+    replace_receipt(
+      () => {
+        calls += 1
+        raise @os_error.OSError(5, context="non-Windows error")
+      },
+      windows=false,
+    )
+  catch {
+    @os_error.OSError(5, ..) => ()
+    _ => fail("Unix error was changed")
+  } noraise {
+    _ => fail("Unix error treated as success")
+  }
+  assert_eq(calls, 1)
+  calls = 0
+  try
+    replace_receipt(
+      () => {
+        calls += 1
+        raise @ipp.Protocol("non-filesystem interruption")
+      },
+      windows=true,
+    )
+  catch {
+    @ipp.Protocol("non-filesystem interruption") => ()
+    _ => fail("interruption was changed")
+  } noraise {
+    _ => fail("interruption treated as success")
+  }
+  assert_eq(calls, 1)
+}
+
+///|
 impl @client.Transport for SlowWorkflowTransport with fn exchange(
   self,
   endpoint,

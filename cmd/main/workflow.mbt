@@ -77,6 +77,36 @@ async fn reserve_receipt(path : String, value : Json) -> Unit {
 }
 
 ///|
+async fn replace_receipt(
+  replace : async () -> Unit,
+  windows~ : Bool = @env.get_env_var("OS") == Some("Windows_NT"),
+) -> Unit {
+  // A Windows reader can briefly deny deletion/replacement of a new file.
+  // Retry only the atomic rename, never the print request or file creation.
+  // Eight attempts wait at most 1,270 ms in total, excluding filesystem IO.
+  let mut attempt = 0
+  while true {
+    try replace() catch {
+      error => {
+        let transient = windows &&
+          (match error {
+            // Win32 ERROR_ACCESS_DENIED, SHARING_VIOLATION and LOCK_VIOLATION.
+            @os_error.OSError(5 | 32 | 33, ..) => true
+            _ => false
+          })
+        if !transient || attempt >= 7 {
+          raise error
+        }
+      }
+    } noraise {
+      _ => return
+    }
+    @async.sleep(10 << attempt)
+    attempt += 1
+  }
+}
+
+///|
 async fn update_receipt(path : String, value : Json) -> Unit {
   let temporary = path + ".moon-ipp-tmp"
   let file = @fs.open(
@@ -94,7 +124,7 @@ async fn update_receipt(path : String, value : Json) -> Unit {
   file.write(value.stringify(indent=2) + "\n")
   file.sync()
   file.close()
-  @fs.rename(temporary, path, replace=true)
+  replace_receipt(() => @fs.rename(temporary, path, replace=true))
 }
 
 ///|
